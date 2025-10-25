@@ -3,475 +3,2520 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blackjack H17 Basic Strategy Trainer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <title>Blackjack Basic Strategy Trainer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Use Inter font */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #166534; /* Darker green */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        /* Card styling */
-        .card { border: 1px solid #9ca3af; border-radius: 8px; padding: 10px 5px; margin: 3px; min-width: 55px; text-align: center; background-color: white; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); font-size: 1.1rem; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; color: black; }
-        .card-hidden { background-color: #6b7280; color: #6b7280; border-color: #4b5563; }
-        .card-red { color: #dc2626; }
-        .card-black { color: #1f2937; }
-        .card-ace { font-weight: 900; font-size: 1.4rem; background-color: #fef9c3; border-color: #fcd34d; border-width: 2px; color: #713f12; transform: scale(1.05); }
 
-        /* Button Styling (Based on Style 3 Visuals) */
-        .action-buttons button, #btn-deal {
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            font-weight: 600;
-            color: white;
-            cursor: pointer;
-            transition: all 0.15s ease-out;
-            border: none;
-            outline: none;
-            text-align: center;
-            min-width: 100px;
-            box-shadow: 0 3px 5px rgba(0,0,0,0.15);
-            border-bottom: 2px solid rgba(0,0,0,0.3);
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
-        .action-buttons button:disabled, #btn-deal:disabled {
+
+        /* ADDED: Main wrapper for graphs + game */
+        .dashboard-wrapper {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            width: 100%;
+            max-width: 1600px; /* Allow space for graphs */
+        }
+
+        /* UPDATED: Graph dashboard container */
+        .graph-dashboard {
+            flex: 1; /* Take up available space */
+            max-width: 500px; /* UPDATED: Increased width */
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #d4af37;
+        }
+
+        .graph-container {
+            width: 100%;
+        }
+
+        .graph-container h2 {
+            font-size: 1.2em;
+            color: #d4af37;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .game-container {
+            background: linear-gradient(to bottom, #0a4d0a 0%, #0d6b0d 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            max-width: 1000px;
+            width: 100%;
+            border: 3px solid #d4af37;
+            flex-shrink: 0; /* Don't let game container shrink */
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #d4af37;
+            font-size: 2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .options {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #d4af37;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            /* UPDATED: Allow vertical stacking on small screens */
+            .dashboard-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+            .graph-dashboard {
+                max-width: 100%;
+                width: 100%;
+                order: 2; /* Show graphs below game */
+            }
+            .game-container {
+                order: 1; /* Show game on top */
+            }
+            
+            .options {
+                gap: 15px;
+            }
+
+            .slider-container {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 1400px) {
+            /* UPDATED: Allow graphs to be a bit smaller on medium screens */
+            .graph-dashboard {
+                max-width: 400px;
+            }
+        }
+
+        .options label {
+            color: #d4af37;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        .options input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #d4af37;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #d4af37;
+            font-size: 1em;
+        }
+
+        .slider-container input[type="range"] {
+            width: 120px;
+            height: 6px;
+            cursor: pointer;
+            accent-color: #d4af37;
+        }
+
+        .slider-value {
+            min-width: 40px;
+            font-weight: bold;
+        }
+
+        .tooltip-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(212, 175, 55, 0.3);
+            color: #d4af37;
+            font-size: 0.7em;
+            font-weight: bold;
+            cursor: help;
+            margin-left: 4px;
+        }
+
+        .tooltip-icon:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.95);
+            color: #d4af37;
+            font-size: 0.85em;
+            border-radius: 6px;
+            white-space: nowrap;
+            z-index: 1000;
+            border: 1px solid #d4af37;
+            pointer-events: none;
+            max-width: 300px;
+            white-space: normal;
+            text-align: center;
+        }
+
+        .tooltip-icon:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 2px;
+            border: 6px solid transparent;
+            border-top-color: #d4af37;
+            z-index: 1000;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.3);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 2px solid #d4af37;
+            min-width: 150px;
+        }
+
+        .stat-label {
+            color: #d4af37;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .table {
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            min-height: 400px;
+            position: relative;
+        }
+
+        .dealer-area, .player-area {
+            margin-bottom: 30px;
+        }
+
+        .dealer-area, .player-area {
+            text-align: center;
+        }
+
+        .area-label {
+            color: #d4af37;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .player-hands-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .player-hand-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.2);
+            min-width: 200px;
+        }
+
+        .player-hand-wrapper.active {
+            background: rgba(212, 175, 55, 0.2);
+            border: 2px solid #d4af37;
+        }
+
+        .hand-label {
+            color: #d4af37;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .hand {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            min-height: 140px;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding-top: 40px;
+        }
+
+        .card {
+            width: 80px;
+            height: 112px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            font-size: 2em;
+            font-weight: bold;
+            position: relative;
+            animation: dealCard 0.4s ease-out;
+        }
+
+        .card.horizontal {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%) rotate(90deg);
+            animation: dealCardHorizontal 0.4s ease-out;
+            z-index: 10;
+        }
+
+        @keyframes dealCard {
+            from {
+                transform: translateX(100vw) translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes dealCardHorizontal {
+            from {
+                transform: translateX(calc(50vw - 50%)) translateY(-20px) rotate(90deg);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0) rotate(90deg);
+                opacity: 1;
+            }
+        }
+
+        .card.red {
+            color: #dc143c;
+        }
+
+        .card.black {
+            color: #000;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            font-size: 2.5em;
+        }
+
+        .hand-total {
+            color: white;
+            font-size: 1.3em;
+            margin-top: 10px;
+            font-weight: bold;
+            background: rgba(0,0,0,0.4);
+            padding: 5px 15px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            min-width: 120px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-            border-bottom: none;
-            background-image: none;
-            background-color: #9ca3af;
         }
-        #btn-hit { background-image: linear-gradient(to bottom, #60a5fa, #3b82f6); border-bottom-color: #1d4ed8; }
-        #btn-hit:hover:not(:disabled) { background-image: linear-gradient(to bottom, #93c5fd, #60a5fa); box-shadow: 0 4px 8px rgba(0,0,0,0.2); transform: translateY(-1px); }
-        #btn-hit:active:not(:disabled) { background-image: linear-gradient(to top, #60a5fa, #3b82f6); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); border-bottom-width: 1px; transform: translateY(1px) scale(0.98); }
-        #btn-stand { background-image: linear-gradient(to bottom, #f87171, #ef4444); border-bottom-color: #b91c1c; }
-        #btn-stand:hover:not(:disabled) { background-image: linear-gradient(to bottom, #fca5a5, #f87171); box-shadow: 0 4px 8px rgba(0,0,0,0.2); transform: translateY(-1px); }
-        #btn-stand:active:not(:disabled) { background-image: linear-gradient(to top, #f87171, #ef4444); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); border-bottom-width: 1px; transform: translateY(1px) scale(0.98); }
-        #btn-double { background-image: linear-gradient(to bottom, #fcd34d, #facc15); border-bottom-color: #ca8a04; color: #1f2937; }
-        #btn-double:hover:not(:disabled) { background-image: linear-gradient(to bottom, #fde68a, #fcd34d); box-shadow: 0 4px 8px rgba(0,0,0,0.2); transform: translateY(-1px); }
-        #btn-double:active:not(:disabled) { background-image: linear-gradient(to top, #fcd34d, #facc15); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); border-bottom-width: 1px; transform: translateY(1px) scale(0.98); }
-        #btn-split { background-image: linear-gradient(to bottom, #c084fc, #a855f7); border-bottom-color: #7e22ce; }
-        #btn-split:hover:not(:disabled) { background-image: linear-gradient(to bottom, #d8b4fe, #c084fc); box-shadow: 0 4px 8px rgba(0,0,0,0.2); transform: translateY(-1px); }
-        #btn-split:active:not(:disabled) { background-image: linear-gradient(to top, #c084fc, #a855f7); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); border-bottom-width: 1px; transform: translateY(1px) scale(0.98); }
-        #btn-surrender { background-image: linear-gradient(to bottom, #9ca3af, #6b7280); border-bottom-color: #374151; }
-        #btn-surrender:hover:not(:disabled) { background-image: linear-gradient(to bottom, #d1d5db, #9ca3af); box-shadow: 0 4px 8px rgba(0,0,0,0.2); transform: translateY(-1px); }
-        #btn-surrender:active:not(:disabled) { background-image: linear-gradient(to top, #9ca3af, #6b7280); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); border-bottom-width: 1px; transform: translateY(1px) scale(0.98); }
-        #btn-deal { background-image: linear-gradient(to bottom, #4ade80, #22c55e); border-bottom-color: #15803d; }
-        #btn-deal:hover:not(:disabled) { background-image: linear-gradient(to bottom, #86efac, #4ade80); box-shadow: 0 4px 8px rgba(0,0,0,0.2); transform: translateY(-1px); }
-        #btn-deal:active:not(:disabled) { background-image: linear-gradient(to top, #4ade80, #22c55e); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); border-bottom-width: 1px; transform: translateY(1px) scale(0.98); }
 
-        /* Replay button style */
-        .btn-replay { background-color: #f97316; color: white; font-size: 0.8rem; padding: 4px 8px; margin-left: 5px; border-radius: 4px; transition: background-color 0.2s ease; }
-        .btn-replay:hover:not(:disabled) { background-color: #ea580c; }
-        .btn-replay:active:not(:disabled) { transform: scale(0.97); }
+        .btn-primary {
+            background: linear-gradient(to bottom, #d4af37 0%, #c5a028 100%);
+            color: #000;
+        }
 
-        /* Mode Selection */
-        .mode-selector { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 10px; }
-        .mode-label, .drill-label { display: inline-block; background-color: #e5e7eb; color: #374151; border: 1px solid #d1d5db; padding: 8px 16px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; border-radius: 6px; transition: all 0.2s ease-out; }
-        input[type="radio"] { display: none; }
-        input[type="radio"]:checked + .mode-label, input[type="radio"]:checked + .drill-label { background-color: #1d4ed8; color: white; border-color: #1e40af; font-weight: 700; }
-        input[type="radio"]:disabled + .mode-label, input[type="radio"]:disabled + .drill-label { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-success {
+            background: linear-gradient(to bottom, #28a745 0%, #218838 100%);
+            color: white;
+        }
 
-        /* Drill Category Selector */
-        .drill-category-selector { display: none; justify-content: center; gap: 10px; margin-bottom: 15px; margin-top: 5px; }
-        body.drill-mode .drill-category-selector { display: flex; flex-wrap: wrap; }
-        .drill-label { padding: 6px 12px; font-size: 0.9rem; }
+        .btn-danger {
+            background: linear-gradient(to bottom, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
 
-        /* Stats/History section */
-        .stats-history { background-color: #f3f4f6; border-radius: 8px; padding: 12px; margin-top: 16px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
-        .history-list { max-height: 150px; overflow-y: auto; margin-top: 8px; padding-right: 5px; }
-        .history-item { font-size: 0.9rem; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
-        .history-item:last-child { border-bottom: none; }
+        .btn-info {
+            background: linear-gradient(to bottom, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
 
-        /* Betting Info */
-        .betting-info { text-align: center; margin-bottom: 10px; font-weight: 500; background-color: #e0f2fe; padding: 8px; border-radius: 6px; border: 1px solid #bae6fd; }
-        body.learning-mode .betting-info, body.drill-mode .betting-info { display: none; }
+        .btn-warning {
+            background: linear-gradient(to bottom, #ffc107 0%, #e0a800 100%);
+            color: #000;
+        }
 
-        /* Responsive adjustments */
-        @media (max-width: 640px) {
-            .action-buttons button, #btn-deal { padding: 8px 12px; font-size: 0.9rem; }
-            .card { min-width: 48px; font-size: 1rem; }
-            .card-ace { font-size: 1.2rem; }
-            .stats-history { padding: 10px; }
-            .history-item { font-size: 0.85rem; }
-            .betting-info { font-size: 0.9rem; }
-            .mode-label, .drill-label { padding: 6px 12px; font-size: 0.9rem;}
+        .message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-size: 1.2em;
+            font-weight: bold;
+            animation: fadeIn 0.3s;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.success {
+            background: rgba(40, 167, 69, 0.3);
+            color: #90ee90;
+            border: 2px solid #28a745;
+        }
+
+        .message.error {
+            background: rgba(220, 53, 69, 0.3);
+            color: #ff6b6b;
+            border: 2px solid #dc3545;
+        }
+
+        .message.info {
+            background: rgba(23, 162, 184, 0.3);
+            color: #87ceeb;
+            border: 2px solid #17a2b8;
+        }
+
+        .message.warning {
+            background: rgba(255, 193, 7, 0.3);
+            color: #ffd700;
+            border: 2px solid #ffc107;
+        }
+        
+        /* KO Deviation Styles */
+        .deviation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-top: 15px;
+            font-size: 0.85em;
+        }
+        
+        .deviation-item {
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 5px;
+            color: #d4af37;
+            transition: all 0.3s ease;
+        }
+        
+        .deviation-item.deviation-active {
+            background: rgba(212, 175, 55, 0.3);
+            border-color: #d4af37;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            font-weight: bold;
+        }
+        
+        .deviation-item .deviation-threshold {
+            float: right;
+            opacity: 0.7;
+            font-size: 0.9em;
+        }
+        
+        /* Betting Chips Styles */
+        .betting-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            border: 2px solid #d4af37;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .betting-label {
+            color: #d4af37;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .chips-container {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chip {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85em;
+            border: 3px solid;
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+            user-select: none;
+        }
+        
+        .chip:hover:not(.chip-disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+        
+        .chip:active:not(.chip-disabled) {
+            transform: translateY(-1px);
+        }
+        
+        .chip.chip-disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .chip-25 {
+            background: linear-gradient(145deg, #2ecc71, #27ae60);
+            border-color: #1e8449;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .chip-100 {
+            background: linear-gradient(145deg, #2c3e50, #1a252f);
+            border-color: #0f1419;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .chip-500 {
+            background: linear-gradient(145deg, #9b59b6, #8e44ad);
+            border-color: #6c3483;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .bet-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .current-bet-display {
+            font-size: 1.3em;
+            color: #d4af37;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .bet-action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .clear-bet-btn {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .clear-bet-btn:hover {
+            background: #c0392b;
+        }
+        
+        .clear-bet-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        /* Betting Ramp Configurator */
+        .betting-ramp-config {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 8px;
+            border: 2px solid #d4af37;
+            display: none;
+        }
+        
+        .betting-ramp-config.visible {
+            display: block;
+        }
+        
+        .config-header {
+            color: #d4af37;
+            font-size: 1em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .ramp-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .ramp-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0,0,0,0.3);
+            padding: 8px;
+            border-radius: 5px;
+        }
+        
+        .ramp-label {
+            color: #d4af37;
+            font-size: 0.9em;
+            min-width: 60px;
+        }
+        
+        .ramp-input {
+            width: 60px;
+            padding: 4px;
+            border: 1px solid #d4af37;
+            background: rgba(0,0,0,0.5);
+            color: #d4af37;
+            border-radius: 4px;
+            font-size: 0.9em;
+            text-align: center;
+        }
+        
+        .ramp-suffix {
+            color: #d4af37;
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
+        
+        .config-toggle-btn {
+            width: 100%;
+            padding: 8px;
+            margin-top: 10px;
+            background: rgba(212, 175, 55, 0.2);
+            border: 1px solid #d4af37;
+            color: #d4af37;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+        
+        .config-toggle-btn:hover {
+            background: rgba(212, 175, 55, 0.3);
+        }
+
+        .pulse {
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .strategy-hint {
+            background: rgba(0,0,0,0.3);
+            border: 2px solid #d4af37;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            color: #d4af37;
+            font-size: 0.95em;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .card {
+                width: 60px;
+                height: 84px;
+                font-size: 1.5em;
+            }
+
+            button {
+                padding: 12px 20px;
+                font-size: 1em;
+                min-width: 100px;
+            }
         }
     </style>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 </head>
-<body class="text-gray-900 flex flex-col items-center justify-center min-h-screen p-4">
-
-    <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-3xl">
-        <h1 class="text-2xl font-bold text-center mb-2">Blackjack H17 Basic Strategy Trainer</h1>
-
-        <div class="mode-selector mb-4">
-            <input type="radio" id="mode-standard" name="game-mode" value="standard" checked>
-            <label for="mode-standard" class="mode-label">Standard Mode</label>
-            <input type="radio" id="mode-learning" name="game-mode" value="learning">
-            <label for="mode-learning" class="mode-label">Learning Mode</label>
-            <input type="radio" id="mode-drill" name="game-mode" value="drill">
-            <label for="mode-drill" class="mode-label">Drill Mode</label>
-        </div>
-
-        <div class="drill-category-selector">
-             <input type="radio" id="drill-pairs" name="drill-category" value="pairs" checked>
-             <label for="drill-pairs" class="drill-label">Pairs (2-9)</label>
-             <input type="radio" id="drill-soft" name="drill-category" value="soft">
-             <label for="drill-soft" class="drill-label">Soft Totals</label>
-             <input type="radio" id="drill-hard" name="drill-category" value="hard">
-             <label for="drill-hard" class="drill-label">Hard Totals</label>
-        </div>
-
-        <div class="betting-info">
-            Bankroll: $<span id="player-chips">3000</span> | Current Bet: $<span id="current-bet">0</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-            <div>
-                 <div class="mb-4">
-                    <h2 class="text-lg font-semibold mb-2">Dealer's Hand (<span id="dealer-total">0</span>)</h2>
-                    <div id="dealer-cards" class="flex flex-wrap justify-center items-center min-h-[60px] bg-gray-100 p-2 rounded"></div>
-                </div>
-                <div class="mb-4">
-                    <h2 class="text-lg font-semibold mb-2">Your Hand (<span id="player-total">0</span>)</h2>
-                    <div id="player-cards" class="flex flex-wrap justify-center items-center min-h-[60px] bg-gray-100 p-2 rounded"></div>
+<body>
+    <div class="dashboard-wrapper">
+        
+        <div class="graph-dashboard">
+            <div class="graph-container">
+                <h2>Session Variance</h2>
+                <canvas id="session-variance-chart"></canvas>
+            </div>
+            
+            <div class="graph-container">
+                <h2>KO Count</h2>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px;">
+                    <div style="font-size: 3.5em; font-weight: bold; color: #d4af37; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);" id="ko-count">-20</div>
+                    <div style="width: 100%; max-width: 300px;">
+                        <div style="font-size: 0.9em; color: #d4af37; margin-bottom: 5px; text-align: center;">Shoe Penetration</div>
+                        <div style="width: 100%; height: 20px; background: rgba(0,0,0,0.3); border-radius: 10px; border: 1px solid #d4af37; overflow: hidden;">
+                            <div id="shoe-penetration-fill" style="height: 100%; width: 0%; background: #4CAF50; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="width: 100%; max-width: 300px;">
+                        <div style="font-size: 0.9em; color: #d4af37; margin-bottom: 8px; text-align: center; font-weight: bold;">Index Plays</div>
+                        <div class="deviation-list">
+                            <div class="deviation-item" id="dev-16v10">
+                                16 vs 10 (Stand)
+                                <span class="deviation-threshold">-6</span>
+                            </div>
+                            <div class="deviation-item" id="dev-11vA">
+                                11 vs A (Double)
+                                <span class="deviation-threshold">-6</span>
+                            </div>
+                            <div class="deviation-item" id="dev-13v2">
+                                13 vs 2 (Stand)
+                                <span class="deviation-threshold">-6</span>
+                            </div>
+                            <div class="deviation-item" id="dev-12v4">
+                                12 vs 4 (Stand)
+                                <span class="deviation-threshold">-6</span>
+                            </div>
+                            <div class="deviation-item" id="dev-insurance">
+                                Insurance
+                                <span class="deviation-threshold">+3</span>
+                            </div>
+                            <div class="deviation-item" id="dev-15v10">
+                                15 vs 10 (Stand)
+                                <span class="deviation-threshold">+4</span>
+                            </div>
+                            <div class="deviation-item" id="dev-10v10">
+                                10 vs 10 (Double)
+                                <span class="deviation-threshold">+4</span>
+                            </div>
+                            <div class="deviation-item" id="dev-10vA">
+                                10 vs A (Double)
+                                <span class="deviation-threshold">+4</span>
+                            </div>
+                            <div class="deviation-item" id="dev-12v2">
+                                12 vs 2 (Stand)
+                                <span class="deviation-threshold">+4</span>
+                            </div>
+                            <div class="deviation-item" id="dev-12v3">
+                                12 vs 3 (Stand)
+                                <span class="deviation-threshold">+4</span>
+                            </div>
+                            <div class="deviation-item" id="dev-9v2">
+                                9 vs 2 (Double)
+                                <span class="deviation-threshold">+4</span>
+                            </div>
+                            <div class="deviation-item" id="dev-9v7">
+                                9 vs 7 (Double)
+                                <span class="deviation-threshold">+4</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="flex flex-col justify-between">
-                 <div class="flex flex-wrap justify-center gap-3 mb-4 action-buttons">
-                    <button id="btn-hit">Hit</button>
-                    <button id="btn-stand">Stand</button>
-                    <button id="btn-double">Double</button>
-                    <button id="btn-split">Split</button>
-                    <button id="btn-surrender">Surrender</button>
-                </div>
-                <div id="message" class="text-center font-semibold mb-2 min-h-[24px]"></div>
-                <div id="feedback" class="text-center font-bold mb-2 min-h-[24px]"></div>
-                 <div class="text-center mt-auto">
-                    <button id="btn-deal">Deal New Hand</button>
-                </div>
-            </div>
         </div>
 
-         <div class="stats-history">
-            <div class="flex justify-between items-center mb-2">
-                 <h3 class="text-lg font-semibold">Training Stats</h3>
-                 <div>Correct Streak: <span id="streak-counter" class="font-bold">0</span></div>
+        <div class="game-container">
+            <div class="header">
+                <h1>♠️ Blackjack Basic Strategy Trainer ♥️</h1>
             </div>
-            <h4 class="text-md font-semibold">Incorrect Play History (Last 10):</h4>
-            <div id="history-list" class="history-list">
-                <p id="no-history-msg" class="text-sm text-gray-500 italic">No incorrect plays recorded yet.</p>
+
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-label">Bankroll</div>
+                    <div class="stat-value" id="bankroll">$10,000</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Current Bet</div>
+                    <div class="stat-value" id="current-bet">$100</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Hands Played</div>
+                    <div class="stat-value" id="hands-played">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Correct Plays</div>
+                    <div class="stat-value" id="correct-plays">0 / 0</div>
+                </div>
             </div>
-             <p class="text-xs text-gray-500 mt-2">Progress saved automatically in browser storage.</p>
+
+            <div class="options">
+                <label>
+                    <input type="checkbox" id="auto-deal-checkbox" onchange="toggleAutoDeal()">
+                    Auto Deal
+                </label>
+                <label>
+                    <input type="checkbox" id="auto-play-checkbox" onchange="toggleAutoPlay()">
+                    Auto Play Easy Hands
+                    <span class="tooltip-icon" data-tooltip="Auto stands: Hard 17-21 • Soft 20 (A,9) • Soft 19 (A,8) vs non-6 • Auto splits: A,A • Auto surrender: 16 vs 9/T/A, 15 vs T">?</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="auto-play-medium-checkbox" onchange="toggleAutoPlayMedium()">
+                    Auto Play Medium Hands
+                    <span class="tooltip-icon" data-tooltip="Auto stands: Hard 13-16 vs dealer 2-6 (excludes pairs)">?</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="auto-play-hits-checkbox" onchange="toggleAutoPlayHits()">
+                    Auto Play Hits
+                    <span class="tooltip-icon" data-tooltip="Auto hits all hard 16 or less vs dealer 7-Ace (if not a double/split).">?</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="hide-totals-checkbox" onchange="toggleHideTotals()">
+                    Hide Totals
+                </label>
+                <label>
+                    <input type="checkbox" id="betting-preset-checkbox" onchange="toggleBettingPreset()">
+                    KO Betting Preset
+                    <span class="tooltip-icon" data-tooltip="Automatically sizes bets based on KO running count using optimal betting ramp">?</span>
+                </label>
+                <div class="slider-container" id="unit-size-container" style="display: none;">
+                    <label for="unit-size-input">Unit Size: $</label>
+                    <input type="number" id="unit-size-input" min="25" max="1000" step="25" value="100" 
+                           oninput="updateUnitSize()" 
+                           style="width: 80px; padding: 4px; border: 1px solid #d4af37; background: rgba(0,0,0,0.5); color: #d4af37; border-radius: 4px;">
+                </div>
+            </div>
+            
+            <div class="betting-ramp-config" id="betting-ramp-config">
+                <div class="config-header">Betting Ramp Configuration</div>
+                <div class="ramp-grid">
+                    <div class="ramp-item">
+                        <span class="ramp-label">RC ≤ -5:</span>
+                        <input type="number" class="ramp-input" id="ramp-rc-5" min="1" max="50" value="1" onchange="updateBettingRamp()">
+                        <span class="ramp-suffix">units</span>
+                    </div>
+                    <div class="ramp-item">
+                        <span class="ramp-label">RC -4:</span>
+                        <input type="number" class="ramp-input" id="ramp-rc-4" min="1" max="50" value="2" onchange="updateBettingRamp()">
+                        <span class="ramp-suffix">units</span>
+                    </div>
+                    <div class="ramp-item">
+                        <span class="ramp-label">RC -3:</span>
+                        <input type="number" class="ramp-input" id="ramp-rc-3" min="1" max="50" value="3" onchange="updateBettingRamp()">
+                        <span class="ramp-suffix">units</span>
+                    </div>
+                    <div class="ramp-item">
+                        <span class="ramp-label">RC -2:</span>
+                        <input type="number" class="ramp-input" id="ramp-rc-2" min="1" max="50" value="4" onchange="updateBettingRamp()">
+                        <span class="ramp-suffix">units</span>
+                    </div>
+                    <div class="ramp-item">
+                        <span class="ramp-label">RC -1:</span>
+                        <input type="number" class="ramp-input" id="ramp-rc-1" min="1" max="50" value="6" onchange="updateBettingRamp()">
+                        <span class="ramp-suffix">units</span>
+                    </div>
+                    <div class="ramp-item">
+                        <span class="ramp-label">RC 0:</span>
+                        <input type="number" class="ramp-input" id="ramp-rc0" min="1" max="50" value="8" onchange="updateBettingRamp()">
+                        <span class="ramp-suffix">units</span>
+                    </div>
+                    <div class="ramp-item">
+                        <span class="ramp-label">RC +1:</span>
+                        <input type="number" class="ramp-input" id="ramp-rc1" min="1" max="50" value="10" onchange="updateBettingRamp()">
+                        <span class="ramp-suffix">units</span>
+                    </div>
+                    <div class="ramp-item">
+                        <span class="ramp-label">RC ≥ +2:</span>
+                        <input type="number" class="ramp-input" id="ramp-rc2" min="1" max="50" value="12" onchange="updateBettingRamp()">
+                        <span class="ramp-suffix">units</span>
+                    </div>
+                </div>
+                <button class="config-toggle-btn" onclick="toggleRampConfig()">Hide Configuration</button>
+            </div>
+            
+            <div class="options">
+                <div class="slider-container">
+                    <label for="redeal-speed-slider">Redeal Speed:</label>
+                    <input type="range" id="redeal-speed-slider" min="0" max="4000" step="500" value="2000" oninput="updateRedealSpeed()">
+                    <span class="slider-value" id="slider-value">2.0s</span>
+                </div>
+            </div>
+
+            <div class="message info" id="message">
+                Click "New Hand" to start playing!
+            </div>
+
+            <div class="table">
+                <div class="dealer-area">
+                    <div class="area-label">Dealer</div>
+                    <div class="hand" id="dealer-hand"></div>
+                    <div class="hand-total" id="dealer-total" style="visibility: hidden;">0</div>
+                </div>
+
+                <div class="player-area">
+                    <div class="area-label">Player</div>
+                    <div class="player-hands-container" id="player-hands-container"></div>
+                </div>
+            </div>
+
+            <div class="betting-controls">
+                <div class="betting-label">Bet:</div>
+                <div class="chips-container">
+                    <div class="chip chip-25" onclick="addChipToBet(25)" id="chip-25">$25</div>
+                    <div class="chip chip-100" onclick="addChipToBet(100)" id="chip-100">$100</div>
+                    <div class="chip chip-500" onclick="addChipToBet(500)" id="chip-500">$500</div>
+                </div>
+                <div class="current-bet-display" id="current-bet-amount">$100</div>
+                <button class="bet-action-btn clear-bet-btn" onclick="clearBet()" id="clear-bet-btn">Clear</button>
+            </div>
+
+            <div class="controls">
+                <button class="btn-primary" id="new-hand-btn" onclick="startNewHand()">New Hand</button>
+                <button class="btn-success" id="hit-btn" onclick="playerAction('hit')" disabled>Hit</button>
+                <button class="btn-danger" id="stand-btn" onclick="playerAction('stand')" disabled>Stand</button>
+                <button class="btn-warning" id="double-btn" onclick="playerAction('double')" disabled>Double</button>
+                <button class="btn-info" id="split-btn" onclick="playerAction('split')" disabled>Split</button>
+            </div>
+
+            <div class="strategy-hint" id="strategy-hint" style="display: none;">
+                Correct play will be shown here after you make your choice
+            </div>
         </div>
-    </div>
+    </div> <script>
+        // Game state
+        let deck = [];
+        let playerHands = []; // Array of hands (for splits)
+        let dealerHand = [];
+        let currentHandIndex = 0;
+        let bankroll = 10000;
+        let currentBet = 100;
+        let handsPlayed = 0;
+        let correctPlays = 0;
+        let totalDecisions = 0;
+        let gameActive = false;
+        let canDouble = false;
+        let canSplit = false;
+        let awaitingFirstAction = false;
+        let displayedDealerCards = 0;
+        let autoDealEnabled = false;
+        let autoPlayEasyHands = false;
+        let autoPlayMediumHands = false;
+        let autoPlayHits = false;
+        let hideTotals = false;
+        let redealSpeed = 2000; // milliseconds
+        let splitAces = false; // Track if we split aces
+        let handWrappers = []; // Track DOM elements for each hand
+        
+        // KO Counting System Variables
+        let koRunningCount = -20; // Starting IRC for 6 decks
+        let cutCardPosition = 0; // Position in deck where cut card is placed
+        let cardsDealt = 0; // Track how many cards have been dealt from shoe
+        let totalCardsInShoe = 312; // 6 decks = 312 cards
+        
+        // Betting Preset System
+        let bettingPresetEnabled = false;
+        let unitSize = 100; // Default unit size in dollars
+        // Default 6-deck KO betting ramp: [runningCount, unitMultiplier]
+        let bettingRamp = [
+            { rc: -5, units: 1 },
+            { rc: -4, units: 2 },
+            { rc: -3, units: 3 },
+            { rc: -2, units: 4 },
+            { rc: -1, units: 6 },
+            { rc: 0, units: 8 },
+            { rc: 1, units: 10 },
+            { rc: 2, units: 12 }
+        ];
 
-    <script>
-        // --- DOM Elements ---
-        const dealerCardsDiv=document.getElementById('dealer-cards'),playerCardsDiv=document.getElementById('player-cards'),dealerTotalSpan=document.getElementById('dealer-total'),playerTotalSpan=document.getElementById('player-total'),messageDiv=document.getElementById('message'),feedbackDiv=document.getElementById('feedback'),btnHit=document.getElementById('btn-hit'),btnStand=document.getElementById('btn-stand'),btnDouble=document.getElementById('btn-double'),btnSplit=document.getElementById('btn-split'),btnSurrender=document.getElementById('btn-surrender'),btnDeal=document.getElementById('btn-deal'),streakCounterSpan=document.getElementById('streak-counter'),historyListDiv=document.getElementById('history-list'),noHistoryMsg=document.getElementById('no-history-msg'),playerChipsSpan=document.getElementById('player-chips'),currentBetSpan=document.getElementById('current-bet'),modeStandardRadio=document.getElementById('mode-standard'),modeLearningRadio=document.getElementById('mode-learning'),modeDrillRadio=document.getElementById('mode-drill'),bodyElement=document.body,drillCategorySelector=document.querySelector('.drill-category-selector');
+        // Card suits and values
+        const suits = ['♠', '♥', '♦', '♣'];
+        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        const valueMap = {'A': 11, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 10, 'Q': 10, 'K': 10};
+        
+        // --- ADDED: Graphing and EV State ---
+        let cumulativeEV = 0;
+        let cumulativeProfit = 0;
+        let currentHandInitialEV = 0; // Stores the $EV of the initial hand
+        let sessionVarianceChart; // UPDATED: Removed handOutcomeChart
 
-        // --- Card Constants ---
-        const SUITS=['♠','♥','♦','♣'],RANKS=['A','2','3','4','5','6','7','8','9','T','J','Q','K'];
-        const EXCLUDED_DRILL_PAIRS = ['A', 'T', 'J', 'Q', 'K'];
+        // The EV table, transcribed from Wizard of Odds data for 6D, H17, DAS
+        // Values are the EV of the *best possible play* for that situation.
+        const evTable = {
+            "hard": {
+                "5":  { "2": -0.126025, "3": -0.093202, "4": -0.055370, "5": -0.015690, "6": 0.019256,  "7": -0.119481, "8": -0.187166, "9": -0.265989, "10": -0.312725, "A": -0.292671 },
+                "6":  { "2": -0.139226, "3": -0.105892, "4": -0.067021, "5": -0.026775, "6": -0.009881, "7": -0.153746, "8": -0.219720, "9": -0.294528, "10": -0.339101, "A": -0.344327 },
+                "7":  { "2": -0.110920, "3": -0.076982, "4": -0.038414, "5": 0.001535,  "6": 0.035824,  "7": -0.069120, "8": -0.213278, "9": -0.288453, "10": -0.321535, "A": -0.353382 },
+                "8":  { "2": -0.023176, "3": 0.008067,  "4": 0.044637,  "5": 0.080817,  "6": 0.111453,  "7": 0.083844,  "8": -0.059455, "9": -0.211386, "10": -0.249600, "A": -0.263885 },
+                "9":  { "2": 0.075786,  "3": 0.131414,  "4": 0.197964,  "5": 0.268497,  "6": 0.324478,  "7": 0.176299,  "8": 0.099920,  "9": -0.052189, "10": -0.150592, "A": -0.124191 },
+                "10": { "2": 0.187678,  "3": 0.268158,  "4": 0.368992,  "5": 0.485545,  "6": 0.535069,  "7": 0.469748,  "8": 0.353456,  "9": 0.230031,  "10": 0.027154,  "A": 0.034616  },
+                "11": { "2": 0.371112,  "3": 0.423861,  "4": 0.479387,  "5": 0.539658,  "6": 0.587547,  "7": 0.404746,  "8": 0.293033,  "9": 0.149188,  "10": -0.004071, "A": -0.025588 },
+                "12": { "2": -0.281702, "3": -0.240493, "4": -0.196879, "5": -0.154527, "6": -0.121827, "7": -0.476858, "8": -0.513537, "9": -0.542861, "10": -0.538594, "A": -0.594466 },
+                "13": { "2": -0.282213, "3": -0.240992, "4": -0.197610, "5": -0.158476, "6": -0.122651, "7": -0.478433, "8": -0.515221, "9": -0.544695, "10": -0.539184, "A": -0.593566 },
+                "14": { "2": -0.282722, "3": -0.241518, "4": -0.198315, "5": -0.162425, "6": -0.123475, "7": -0.479132, "8": -0.515767, "9": -0.545528, "10": -0.535586, "A": -0.592673 },
+                "15": { "2": -0.283230, "3": -0.242197, "4": -0.202241, "5": -0.163247, "6": -0.124186, "7": -0.479635, "8": -0.516638, "9": -0.541376, "10": -0.536220, "A": -0.503074 },
+                "16": { "2": -0.283912, "3": -0.246129, "4": -0.203055, "5": -0.163962, "6": -0.124822, "7": -0.480503, "8": -0.516050, "9": -0.541961, "10": -0.534676, "A": -0.538656 },
+                "17": { "2": -0.157192, "3": -0.120447, "4": -0.080830, "5": -0.045986, "6": -0.009816, "7": -0.478380, "8": -0.500967, "9": -0.549404, "10": -0.580066, "A": -0.578940 },
+                "18": { "2": 0.109693,  "3": 0.137849,  "4": 0.164363,  "5": 0.195534,  "6": 0.220261,  "7": -0.108885, "8": -0.384233, "9": -0.612833, "10": -0.643745, "A": -0.639911 },
+                "19": { "2": 0.377921,  "3": 0.394037,  "4": 0.413067,  "5": 0.437502,  "6": 0.450523,  "7": 0.615047,  "8": 0.591091,  "9": 0.283901,  "10": 0.069444,  "A": 0.191966  },
+                "20": { "2": 0.632910,  "3": 0.643634,  "4": 0.654267,  "5": 0.668927,  "6": 0.676590,  "7": 0.772011,  "8": 0.790420,  "9": 0.756075,  "10": 0.559145, "A": 0.600344  },
+                "21": { "2": 0.880850,  "3": 0.887820,  "4": 0.894790,  "5": 0.904890,  "6": 0.910380,  "7": 0.850445,  "8": 0.847142,  "9": 0.849438,  "10": 0.847142, "A": 0.108590  } // 10,A is BJ
+            },
+            "soft": {
+                "13": { "2": 0.045611,  "3": 0.073770,  "4": 0.104348,  "5": 0.141030,  "6": 0.166485,  "7": 0.120174,  "8": 0.051835,  "9": -0.034089, "10": -0.102303, "A": -0.100433 },
+                "14": { "2": 0.022101,  "3": 0.050358,  "4": 0.082777,  "5": 0.139629,  "6": 0.189536,  "7": 0.076540,  "8": 0.016478,  "9": -0.072746, "10": -0.137094, "A": -0.135170 },
+                "15": { "2": -0.000918, "3": 0.029075,  "4": 0.065278,  "5": 0.130267,  "6": 0.202017,  "7": 0.036406,  "8": -0.028404, "9": -0.112418, "10": -0.173213, "A": -0.172032 },
+                "16": { "2": -0.021446, "3": 0.008338,  "4": 0.061535,  "5": 0.130267,  "6": 0.202017,  "7": -0.007882, "8": -0.069392, "9": -0.151418, "10": -0.210080, "A": -0.209173 },
+                "17": { "2": -0.000274, "3": 0.057176,  "4": 0.123295,  "5": 0.197379,  "6": 0.252146,  "7": 0.054706,  "8": -0.071750, "9": -0.147268, "10": -0.195609, "A": -0.221401 },
+                "18": { "2": 0.116262,  "3": 0.175215,  "4": 0.244794,  "5": 0.302263,  "6": 0.356906,  "7": 0.171872,  "8": 0.041028,  "9": -0.098469, "10": -0.142912, "A": -0.160455 },
+                "19": { "2": 0.380751,  "3": 0.399787,  "4": 0.415570,  "5": 0.439914,  "6": 0.462089,  "7": 0.220956,  "8": 0.152904,  "9": 0.007442,  "10": -0.087616, "A": -0.064654 },
+                "20": { "2": 0.637642,  "3": 0.645253,  "4": 0.655844,  "5": 0.670408,  "6": 0.677574,  "7": 0.773273,  "8": 0.790658,  "9": 0.759490,  "10": 0.554555, "A": 0.030489  },
+                "21": { "2": 0.472562,  "3": 0.520285,  "4": 0.570259,  "5": 0.622136,  "6": 0.667063,  "7": 0.463763,  "8": 0.347788,  "9": 0.225894,  "10": 0.173198, "A": 1.5       } // 10,A is BJ
+            },
+            "pairs": {
+                "A": { "2": 0.485375,  "3": 0.532737,  "4": 0.582300,  "5": 0.633712,  "6": 0.679649,  "7": 0.475600,  "8": 0.359708,  "9": 0.237754,  "10": 0.181988,  "A": 0.120987  },
+                "2": { "2": 0.078280,  "3": 0.073362,  "4": 0.176577,  "5": 0.268018,  "6": 0.008597,  "7": -0.176794, "8": -0.237873, "9": -0.287099, "10": -0.522035, "A": -0.153905 },
+                "3": { "2": -0.129464, "3": -0.046145, "4": 0.054585,  "5": 0.156799,  "6": 0.247426,  "7": -0.051101, "8": -0.230664, "9": -0.431618, "10": -0.546375, "A": -0.566417 },
+                "4": { "2": -0.181576, "3": -0.088408, "4": 0.010058,  "5": 0.114847,  "6": 0.207228,  "7": -0.168774, "8": -0.325801, "9": -0.508478, "10": -0.619294, "A": -0.636420 },
+                "5": { "2": 0.187678,  "3": 0.268158,  "4": 0.368992,  "5": 0.485545,  "6": 0.535069,  "7": 0.469748,  "8": 0.353456,  "9": 0.230031,  "10": 0.027154,  "A": 0.034616  }, // Never split 5s, treat as Hard 10
+                "6": { "2": -0.190104, "3": -0.092792, "4": 0.010721,  "5": 0.115525,  "6": 0.191888,  "7": -0.252905, "8": -0.416429, "9": -0.602063, "10": -0.707854, "A": -0.726030 },
+                "7": { "2": -0.120233, "3": -0.028565, "4": 0.072938,  "5": 0.160565,  "6": 0.249820,  "7": -0.048567, "8": -0.390952, "9": -0.573526, "10": -0.652075, "A": -0.728559 },
+                "8": { "2": 0.074691,  "3": 0.148354,  "4": 0.218242,  "5": 0.301452,  "6": 0.373881,  "7": 0.318876,  "8": -0.029242, "9": -0.389950, "10": -0.475385, "A": -0.514318 },
+                "9": { "2": 0.195080,  "3": 0.249871,  "4": 0.319011,  "5": 0.393253,  "6": 0.453097,  "7": 0.334523,  "8": 0.229929,  "9": -0.081564, "10": -0.309996, "A": -0.240949 },
+                "10":{ "2": 0.632910,  "3": 0.643634,  "4": 0.654267,  "5": 0.668927,  "6": 0.676590,  "7": 0.772011,  "8": 0.790420,  "9": 0.756075,  "10": 0.559145, "A": 0.600344  } // Never split 10s
+            }
+        };
+        // --- END: Graphing and EV State ---
 
-        // --- Game State Variables ---
-        let deck=[],playerCards=[],dealerCards=[],playerTotal=0,dealerTotal=0,dealerUpCard=null,dealerUpCardRank='',playerCanHit=!0,isPlayerTurn=!1,isFirstAction=!0,handOver=!0;
-        let currentMode = 'standard';
-        let currentDrillCategory = 'pairs';
-        let initialHandState = null;
-        let errorLoggedThisHand = false;
 
-        // --- Stats & History Variables ---
-        let currentStreak = 0;
-        let errorHistory = [];
-        const MAX_HISTORY_ITEMS = 10;
-        let masteryData = {};
-        const MASTERY_THRESHOLD = 3;
-
-        // --- Betting Variables ---
-        let playerChips = 3000;
-        const BASE_BET = 25;
-        let currentBet = 0, initialBet = 0;
-
-        // --- Basic Strategy Tables (Corrected based on visual chart) ---
-        const pairSplittingStrategy={ 'A,A':{'2':'Y','3':'Y','4':'Y','5':'Y','6':'Y','7':'Y','8':'Y','9':'Y','T':'Y','A':'Y'}, 'T,T':{'2':'N','3':'N','4':'N','5':'N','6':'N','7':'N','8':'N','9':'N','T':'N','A':'N'}, '9,9':{'2':'Y','3':'Y','4':'Y','5':'Y','6':'Y','7':'N','8':'Y','9':'Y','T':'N','A':'N'}, '8,8':{'2':'Y','3':'Y','4':'Y','5':'Y','6':'Y','7':'Y','8':'Y','9':'Y','T':'Y','A':'Y'}, '7,7':{'2':'Y','3':'Y','4':'Y','5':'Y','6':'Y','7':'Y','8':'N','9':'N','T':'N','A':'N'}, '6,6':{'2':'YN','3':'Y','4':'Y','5':'Y','6':'Y','7':'N','8':'N','9':'N','T':'N','A':'N'}, '5,5':{'2':'N','3':'N','4':'N','5':'N','6':'N','7':'N','8':'N','9':'N','T':'N','A':'N'}, '4,4':{'2':'N','3':'YN','4':'YN','5':'N','6':'N','7':'N','8':'N','9':'N','T':'N','A':'N'}, '3,3':{'2':'YN','3':'YN','4':'YN','5':'Y','6':'Y','7':'Y','8':'N','9':'N','T':'N','A':'N'}, '2,2':{'2':'YN','3':'YN','4':'YN','5':'Y','6':'Y','7':'Y','8':'N','9':'N','T':'N','A':'N'} };
-        const softTotalsStrategy={20:{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'S','8':'S','9':'S','T':'S','A':'S'},19:{'2':'S','3':'S','4':'S','5':'S','6':'Ds','7':'S','8':'S','9':'S','T':'S','A':'S'}, /* A,8 vs 6 is Ds */ 18:{'2':'Ds','3':'Ds','4':'Ds','5':'Ds','6':'Ds','7':'S','8':'S','9':'H','T':'H','A':'H'},17:{'2':'H','3':'D','4':'D','5':'D','6':'D','7':'H','8':'H','9':'H','T':'H','A':'H'},16:{'2':'H','3':'H','4':'D','5':'D','6':'D','7':'H','8':'H','9':'H','T':'H','A':'H'},15:{'2':'H','3':'H','4':'D','5':'D','6':'D','7':'H','8':'H','9':'H','T':'H','A':'H'},14:{'2':'H','3':'H','4':'H','5':'D','6':'D','7':'H','8':'H','9':'H','T':'H','A':'H'},13:{'2':'H','3':'H','4':'H','5':'D','6':'D','7':'H','8':'H','9':'H','T':'H','A':'H'}};
-        const hardTotalsStrategy={17:{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'S','8':'S','9':'S','T':'S','A':'S'},16:{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'H','8':'H','9':'H','T':'H','A':'H'},15:{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'H','8':'H','9':'H','T':'H','A':'H'},14:{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'H','8':'H','9':'H','T':'H','A':'H'},13:{'2':'S','3':'S','4':'S','5':'S','6':'S','7':'H','8':'H','9':'H','T':'H','A':'H'},12:{'2':'H','3':'H','4':'S','5':'S','6':'S','7':'H','8':'H','9':'H','T':'H','A':'H'},11:{'2':'D','3':'D','4':'D','5':'D','6':'D','7':'D','8':'D','9':'D','T':'D','A':'D'},10:{'2':'D','3':'D','4':'D','5':'D','6':'D','7':'D','8':'D','9':'D','T':'H','A':'H'},9:{'2':'H','3':'D','4':'D','5':'D','6':'D','7':'H','8':'H','9':'H','T':'H','A':'H'},8:{'2':'H','3':'H','4':'H','5':'H','6':'H','7':'H','8':'H','9':'H','T':'H','A':'H'}};
-        const surrenderStrategy={17:{'A':'SUR'}, /* 17 vs A */ 16:{'9':'SUR','T':'SUR','A':'SUR'}, 15:{'T':'SUR', 'A':'SUR'} /* 15 vs T, A */};
-        const surrenderPair88vsA=!0; // 8,8 vs A is also SUR
-
-        // --- Helper Functions ---
-        function createDeck(){let d=[];for(const s of SUITS)for(const r of RANKS)d.push({suit:s,rank:r});return d}
-        function shuffleDeck(d){for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]}}
-        function getCardValue(c){if(!c)return 0;if(['T','J','Q','K'].includes(c.rank))return 10;if(c.rank==='A')return 11;return parseInt(c.rank)}
-        function calculateHandTotal(h){let t=0,a=0;for(const c of h){t+=getCardValue(c);if(c.rank==='A')a++}while(t>21&&a>0){t-=10;a--}return t}
-        function isSoftHand(h){let t=0,a=0;for(const c of h){t+=getCardValue(c);if(c.rank==='A')a++}let adT=t,adA=a;while(adT>21&&adA>0){adT-=10;adA--}return a>0&&adT<=21&&t<=21}
-        function isPairForSplit(h){return isFirstAction&&h.length===2&&h[0].rank===h[1].rank}
-        function getStrategyRank(c){if(!c)return'';if(['T','J','Q','K'].includes(c.rank))return'T';return c.rank}
-        function cardToString(c){if(!c)return'??';return`${c.rank}${c.suit}`}
-        function handToString(h){return h.map(cardToString).join(' ')}
-        function isPairHandInitial(hand) { return hand.length === 2 && hand[0].rank === hand[1].rank; }
-        function isSoftHandInitial(hand) { return hand.length === 2 && (hand[0].rank === 'A' || hand[1].rank === 'A') && calculateHandTotal(hand) <= 21; }
-        function isHardHandInitial(hand) { return hand.length === 2 && !isPairHandInitial(hand) && !isSoftHandInitial(hand); }
-
-        // --- Situation Key Generation ---
-        function getSituationKey(playerHand, dealerUpCardRankStr) {
-            if (!playerHand || playerHand.length < 2 || !dealerUpCardRankStr) return null;
-            const pTotal = calculateHandTotal(playerHand);
-            const pIsPair = playerHand.length === 2 && playerHand[0].rank === playerHand[1].rank;
-            const pIsSoft = isSoftHand(playerHand);
-            const pRank1 = getStrategyRank(playerHand[0]);
-            const pRank2 = getStrategyRank(playerHand[1]);
-            if (pIsPair && isFirstAction) { const sortedRanks = [pRank1, pRank2].sort().join(''); return `Pair_${sortedRanks}_vs_${dealerUpCardRankStr}`; }
-            else if (pIsSoft) { if (pTotal >= 13 && pTotal <= 21) return `Soft_${pTotal}_vs_${dealerUpCardRankStr}`; else return `Hard_${pTotal}_vs_${dealerUpCardRankStr}`; }
-            else { return `Hard_${pTotal}_vs_${dealerUpCardRankStr}`; }
-        }
-
-        // --- Basic Strategy Logic ---
-        function getCurrentCorrectActionCode(currentCards, dealerRank) { const pT = calculateHandTotal(currentCards); const pIS = isSoftHand(currentCards); if (pIS) { if (pT >= 13 && pT <= 20 && softTotalsStrategy[pT]?.[dealerRank]) return softTotalsStrategy[pT][dealerRank]; if (pT >= 19) return 'S'; } if (pT >= 17) return 'S'; if (pT <= 8) return 'H'; if (hardTotalsStrategy[pT]?.[dealerRank]) return hardTotalsStrategy[pT][dealerRank]; console.warn("Could not determine current strategy:", currentCards, pT, pIS, dealerRank); return 'H'; }
-        function getInitialCorrectActionCode(initialCards, dealerRank, checkYN = false) { const pT = calculateHandTotal(initialCards); const pIPS = isPairHandInitial(initialCards); const pIS = isSoftHandInitial(initialCards); const pR1 = initialCards.length > 0 ? getStrategyRank(initialCards[0]) : ''; const pR2 = initialCards.length > 1 ? getStrategyRank(initialCards[1]) : ''; if (pIPS && pR1 === '8' && dealerRank === 'A' && surrenderPair88vsA) return 'SUR'; if (surrenderStrategy[pT]?.[dealerRank]) { if (!pIPS) return surrenderStrategy[pT][dealerRank]; } if (pIPS) { const pK = `${[pR1, pR2].sort().join(',')}`; if (pairSplittingStrategy[pK]?.[dealerRank]) { const sA = pairSplittingStrategy[pK][dealerRank]; if (checkYN) return sA; if (sA === 'Y') return 'P'; if (sA === 'YN') return 'N'; if (sA === 'N') return 'N'; } } return getCurrentCorrectActionCode(initialCards, dealerRank); }
-        function mapStrategyToAction(c){switch(c){case'H':return'Hit';case'S':return'Stand';case'D':return'Double';case'Ds':return'Double';case'P':return'Split';case'Y':return'Split';case'SUR':return'Surrender';case'N':return'NoSplit';case'YN':return'SplitHit';default:return'Unknown'}}
-
-        // --- UI Update Functions ---
-        function createCardElement(c,iH=!1){const d=document.createElement('div');d.classList.add('card');if(iH){d.classList.add('card-hidden');d.textContent='??'}else{d.textContent=cardToString(c);if(['♥','♦'].includes(c.suit))d.classList.add('card-red');else d.classList.add('card-black');if(c.rank==='A')d.classList.add('card-ace')}return d}
-        function renderHands(sDD=!1){dealerCardsDiv.innerHTML='';playerCardsDiv.innerHTML='';dealerCards.forEach((c,i)=>{const iH=i===1&&!sDD;dealerCardsDiv.appendChild(createCardElement(c,iH))});playerCards.forEach(c=>{playerCardsDiv.appendChild(createCardElement(c))});playerTotal=calculateHandTotal(playerCards);playerTotalSpan.textContent=playerTotal>21?`Bust (${playerTotal})`:playerTotal;if(sDD){dealerTotal=calculateHandTotal(dealerCards);dealerTotalSpan.textContent=dealerTotal>21?`Bust (${dealerTotal})`:dealerTotal}else{dealerTotalSpan.textContent=dealerCards.length>0?getCardValue(dealerCards[0]):0}}
-        function updateBettingDisplay(){playerChipsSpan.textContent=playerChips;currentBetSpan.textContent=currentBet}
-        function updateButtonStates(){const tD=!isPlayerTurn||playerTotal>21||handOver;const cS=isFirstAction&&playerCards.length===2&&playerCards[0].rank===playerCards[1].rank;const dBR=currentMode==='standard'?initialBet:0;const cD=isFirstAction&&playerCards.length===2&&playerTotal<=21&&playerChips>=dBR;const cSur=isFirstAction&&playerCards.length===2;const sBR=currentMode==='standard'?initialBet:0;btnHit.disabled=tD||!playerCanHit;btnStand.disabled=tD;btnDouble.disabled=tD||!cD||!isFirstAction; btnSplit.disabled=tD||!cS||playerChips<sBR||!isFirstAction; btnSurrender.disabled=tD||!cSur||!isFirstAction; btnDeal.disabled=!handOver||(currentMode==='standard'&&playerChips<BASE_BET)}
-        function showMessage(msg,a=!1){if(a)messageDiv.textContent+=` ${msg}`;else messageDiv.textContent=msg}
-        function showFeedback(m,i){feedbackDiv.textContent=m;feedbackDiv.className='text-center font-bold mb-2 min-h-[24px]';if(i===!0)feedbackDiv.classList.add('text-green-600');else if(i===!1)feedbackDiv.classList.add('text-red-600');else feedbackDiv.textContent=''}
-        function updateStreakDisplay(){streakCounterSpan.textContent=currentStreak}
-        function renderHistory(){historyListDiv.innerHTML='';if(errorHistory.length===0){historyListDiv.appendChild(noHistoryMsg);noHistoryMsg.style.display='block';return}noHistoryMsg.style.display='none';const rE=errorHistory.slice(-MAX_HISTORY_ITEMS);rE.forEach((e,i)=>{const pT=calculateHandTotal(e.playerCards),hS=handToString(e.playerCards),dUS=cardToString(e.dealerUpCard);const lI=document.createElement('div');lI.classList.add('history-item');const tS=document.createElement('span');tS.textContent=`${e.situationKey}: You (${e.playerAction}), BS (${e.correctAction})`;const rB=document.createElement('button');rB.textContent='Replay';rB.classList.add('btn-replay');rB.dataset.historyIndex=errorHistory.length-rE.length+i;rB.addEventListener('click',()=>{replayHand(parseInt(rB.dataset.historyIndex))});lI.appendChild(tS);lI.appendChild(rB);historyListDiv.appendChild(lI)})}
-
-        // --- Persistence Functions ---
-        const STORAGE_KEY = 'blackjackTrainerProgress_v1';
-        function saveProgress(){const p={bankroll:playerChips,currentStreak:currentStreak,errorHistory:errorHistory,masteryData:masteryData};try{localStorage.setItem(STORAGE_KEY,JSON.stringify(p))}catch(e){console.error("Error saving progress:",e);showMessage("Error saving progress.",!0)}}
-        function loadProgress(){try{const sD=localStorage.getItem(STORAGE_KEY);if(sD){const p=JSON.parse(sD);playerChips=p.bankroll??3000;currentStreak=p.currentStreak??0;errorHistory=p.errorHistory??[];masteryData=p.masteryData??{};console.log("Progress loaded.")}else{console.log("No saved progress found.")}}catch(e){console.error("Error loading progress:",e);showMessage("Error loading progress.");playerChips=3000;currentStreak=0;errorHistory=[];masteryData={}}updateBettingDisplay();updateStreakDisplay();renderHistory()}
-
-        // --- Mode Switching Function ---
-        function setMode(mode){currentMode=mode;bodyElement.classList.toggle('learning-mode',mode==='learning');bodyElement.classList.toggle('drill-mode',mode==='drill');bodyElement.classList.toggle('standard-mode',mode==='standard');console.log("Mode switched to:",currentMode);if(!handOver){}updateButtonStates();if(mode==='learning'||mode==='drill'){currentBet=0;initialBet=0;updateBettingDisplay()}}
-
-        // --- Game Logic Functions ---
-        function getNextHandDeal(){if(currentMode==='standard')return{type:'random'};if(currentMode==='drill')return{type:'drill',category:currentDrillCategory};const uE=errorHistory.filter(e=>(masteryData[e.situationKey]??0)<MASTERY_THRESHOLD);if(uE.length>0&&Math.random()<0.5){const rI=Math.floor(Math.random()*uE.length);console.log("Learning: Replaying unmastered error.");return{type:'replay',data:uE[rI]}}else{console.log("Learning: Dealing targeted random hand.");return{type:'random_learning'}}}
-        function isSituationEasyOrMastered(sK){if(!sK)return!0;if((masteryData[sK]??0)>=MASTERY_THRESHOLD)return!0;if(sK.startsWith("Hard_18")||sK.startsWith("Hard_19")||sK.startsWith("Hard_20")||sK.startsWith("Hard_21"))return!0;if(sK.startsWith("Hard_8")||sK.startsWith("Hard_7")||sK.startsWith("Hard_6")||sK.startsWith("Hard_5")||sK.startsWith("Hard_4"))return!0;if(sK.startsWith("Soft_19")||sK.startsWith("Soft_20")||sK.startsWith("Soft_21"))return!0;if(sK.startsWith("Pair_TT"))return!0;return!1}
-
-        function dealNewHand() {
-            const dealOrder = getNextHandDeal();
-            let replayData = dealOrder.type === 'replay' ? dealOrder.data : null;
-            const drillCategory = dealOrder.type === 'drill' ? dealOrder.category : null;
-
-            if (currentMode === 'standard') {
-                if (playerChips < BASE_BET) { showMessage("Not enough chips!"); handOver = true; updateButtonStates(); return; }
-                initialBet = BASE_BET; currentBet = initialBet; playerChips -= initialBet;
-            } else { initialBet = 0; currentBet = 0; }
-
-            handOver = false; deck = createDeck(); shuffleDeck(deck);
-            let maxAttempts = 200, handDealt = false;
-            let dealtPlayerCards = [], dealtDealerCards = [];
-
-            while (!handDealt && maxAttempts > 0) {
-                maxAttempts--;
-                if (replayData) {
-                    dealtPlayerCards = [...replayData.playerCards]; dealtDealerCards = [replayData.dealerUpCard];
-                    const cardsToRemove = [...dealtPlayerCards, replayData.dealerUpCard];
-                    deck = deck.filter(dc => !cardsToRemove.some(rc => dc.rank === rc.rank && dc.suit === rc.suit));
-                    if (deck.length > 0) dealtDealerCards.push(deck.pop());
-                    else { console.error("Deck empty replay"); replayData = null; continue; }
-                    showMessage("Replaying Problem Hand. Your turn."); handDealt = true;
-                } else {
-                    if (deck.length < 4) { deck = createDeck(); shuffleDeck(deck); }
-                    dealtPlayerCards = [deck.pop(), deck.pop()]; dealtDealerCards = [deck.pop(), deck.pop()];
-                    playerTotal = calculateHandTotal(dealtPlayerCards); dealerUpCard = dealtDealerCards[0]; dealerUpCardRank = getStrategyRank(dealerUpCard);
-                    const situationKey = getSituationKey(dealtPlayerCards, dealerUpCardRank);
-                    if (playerTotal === 21) { if (currentMode === 'learning' || currentMode === 'drill') continue; }
-                    if (dealOrder.type === 'random_learning' && isSituationEasyOrMastered(situationKey)) continue;
-                    if (dealOrder.type === 'drill') {
-                        let match = false; const isPair = isPairHandInitial(dealtPlayerCards); const isSoft = isSoftHandInitial(dealtPlayerCards); const isHard = isHardHandInitial(dealtPlayerCards); const pairRank = isPair ? dealtPlayerCards[0].rank : null;
-                        if (drillCategory === 'pairs') { if (isPair && !EXCLUDED_DRILL_PAIRS.includes(pairRank)) match = true; }
-                        else if (drillCategory === 'soft' && isSoft) match = true;
-                        else if (drillCategory === 'hard' && isHard) match = true;
-                        if (!match) continue; console.log(`Drill Mode: Dealt matching ${drillCategory} hand.`);
+        // Initialize deck
+        function createDeck() {
+            deck = [];
+            // Create 6-deck shoe (312 cards)
+            for (let i = 0; i < 6; i++) {
+                for (let suit of suits) {
+                    for (let value of values) {
+                        deck.push({value, suit, numValue: valueMap[value]});
                     }
-                    let msg = "Your turn. Choose an action."; if (currentMode === 'learning') msg = "Learning Mode: Your turn."; else if (currentMode === 'drill') msg = `Drill Mode (${drillCategory}): Your turn.`;
-                    showMessage(msg); handDealt = true;
                 }
             }
-            if (!handDealt) { console.error("Failed to deal suitable hand."); showMessage(`Error dealing hand (Mode: ${currentMode}, Drill: ${drillCategory || 'N/A'}). Please try again.`); handOver = true; updateButtonStates(); return; }
-
-            playerCards = dealtPlayerCards; dealerCards = dealtDealerCards; dealerUpCard = dealerCards[0]; dealerUpCardRank = getStrategyRank(dealerUpCard); playerTotal = calculateHandTotal(playerCards);
-            initialHandState = { playerCards: [...playerCards], dealerUpCard: {...dealerUpCard}, situationKey: getSituationKey(playerCards, dealerUpCardRank) };
-            errorLoggedThisHand = false; playerCanHit = true; isPlayerTurn = true; isFirstAction = true; showFeedback(null, null);
-            renderHands(); updateBettingDisplay();
-
-            if (currentMode === 'standard' && playerTotal === 21) {
-                dealerTotal = calculateHandTotal(dealerCards); playerCanHit = false; isPlayerTurn = false; renderHands(true);
-                if (dealerTotal === 21) { playerChips += initialBet; showMessage("Push! Both have Blackjack."); }
-                else { const w = initialBet * 1.5; playerChips += initialBet + w; showMessage(`Blackjack! You win $${w.toFixed(0)}!`); }
-                 endHand(true);
-            } else { updateButtonStates(); }
+            shuffleDeck();
+            
+            // Place cut card randomly between 4.5-5 decks deep (234-260 cards dealt out of 312)
+            // This leaves 1-1.5 decks undealt, like a real casino
+            const minCutCard = 234; // 4.5 decks
+            const maxCutCard = 260; // 5 decks
+            cutCardPosition = Math.floor(Math.random() * (maxCutCard - minCutCard + 1)) + minCutCard;
+            
+            // Reset card tracking and KO count
+            cardsDealt = 0;
+            koRunningCount = -20; // Reset to IRC for 6 decks
+            totalCardsInShoe = 312;
+            
+            updateKODisplay();
         }
 
-        function replayHand(hI){if(hI>=0&&hI<errorHistory.length){const hTR=errorHistory[hI];console.log("Replaying:",hTR);setMode('learning');modeLearningRadio.checked=true;setTimeout(()=>dealNewHand({ type: 'replay', data: hTR }),50)}else console.error("Invalid history index:",hI)}
+        function shuffleDeck() {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
 
-        // --- Player Actions ---
-        function playerHit(){if(!isPlayerTurn||!playerCanHit||handOver)return;checkAction('Hit');isFirstAction=!1;updateButtonStates(); if(deck.length===0){console.error("Deck empty, cannot hit!");showMessage("Error: Deck is empty!");handOver=!0;updateButtonStates();return}playerCards.push(deck.pop());playerTotal=calculateHandTotal(playerCards);renderHands();if(playerTotal>21){showMessage("You Busted!",!0);playerCanHit=!1;isPlayerTurn=!1;endHand()}else if(playerTotal===21){showMessage("You have 21. Dealer's turn.");playerCanHit=!1;isPlayerTurn=!1;dealerTurn()}else{showMessage("Hit or Stand?")}updateButtonStates()}
-        function playerStand(){if(!isPlayerTurn||handOver)return;checkAction('Stand');isFirstAction=!1;playerCanHit=!1;isPlayerTurn=!1;dealerTurn()}
-        function playerDouble(){const bN=currentMode==='standard'?initialBet:0;if(!isPlayerTurn||!isFirstAction||playerCards.length!==2||playerTotal>21||handOver||playerChips<bN)return;checkAction('Double');if(currentMode==='standard'){playerChips-=initialBet;currentBet+=initialBet;updateBettingDisplay()}isFirstAction=!1;playerCanHit=!1;isPlayerTurn=!1;if(deck.length===0){console.error("Deck empty, cannot double!");showMessage("Error: Deck is empty!");if(currentMode==='standard')playerChips+=initialBet;endHand(!0);return}playerCards.push(deck.pop());playerTotal=calculateHandTotal(playerCards);renderHands();if(playerTotal>21){showMessage(`Doubled down and Busted (${playerTotal})!`+(currentMode==='standard'?` You lose $${currentBet}.`:''));endHand()}else{showMessage(`Doubled down. Your total: ${playerTotal}. Dealer's turn.`);dealerTurn()}}
-        function playerSplit(){const bN=currentMode==='standard'?initialBet:0;if(!isPlayerTurn||!isFirstAction||!isPairForSplit(playerCards)||playerTotal>21||handOver||playerChips<bN)return;checkAction('Split');isFirstAction=!1;isPlayerTurn=!1;playerCanHit=!1;showMessage("Split chosen (Trainer checks decision, doesn't play split hands). Hand ended.");if(currentMode==='standard'){playerChips+=initialBet;currentBet=0}endHand(!0)}
-        function playerSurrender(){if(!isPlayerTurn||!isFirstAction||playerCards.length!==2||handOver)return;checkAction('Surrender');isFirstAction=!1;isPlayerTurn=!1;playerCanHit=!1;if(currentMode==='standard'){const aL=initialBet/2,aR=initialBet/2;playerChips+=aR;showMessage(`You Surrendered. You lose $${aL}.`);currentBet=0}else{showMessage("You Surrendered.")}renderHands(!0);endHand(!0)}
+        function dealCard(countImmediately = true) {
+            // Check if we've reached the cut card - if so, shuffle after this hand completes
+            if (cardsDealt >= cutCardPosition && !gameActive) {
+                showMessage('Cut card reached! Shuffling new shoe...', 'info');
+                createDeck();
+            }
+            
+            // If deck is somehow empty (shouldn't happen with cut card), create new deck
+            if (deck.length === 0) {
+                createDeck();
+            }
+            
+            const card = deck.pop();
+            cardsDealt++;
+            
+            // Update KO count based on card value (only if countImmediately is true)
+            if (countImmediately) {
+                updateKOCount(card);
+            }
+            
+            return card;
+        }
+        
+        // Update the KO running count based on card dealt
+        function updateKOCount(card) {
+            const value = card.value;
+            
+            // KO System: 2-7 = +1, 8-9 = 0, T-A = -1
+            if (['2', '3', '4', '5', '6', '7'].includes(value)) {
+                koRunningCount += 1;
+            } else if (['10', 'J', 'Q', 'K', 'A'].includes(value)) {
+                koRunningCount -= 1;
+            }
+            // 8 and 9 don't change the count (0)
+            
+            updateKODisplay();
+        }
+        
+        // Update the KO counter display
+        function updateKODisplay() {
+            const countElement = document.getElementById('ko-count');
+            if (countElement) {
+                countElement.textContent = koRunningCount >= 0 ? '+' + koRunningCount : koRunningCount;
+            }
+            
+            // Update shoe penetration display
+            updateShoePenetration();
+            
+            // Update preset bet if enabled and not in active game
+            if (bettingPresetEnabled && !gameActive) {
+                updatePresetBet();
+            }
+        }
+        
+        // Update the shoe penetration visual
+        function updateShoePenetration() {
+            const penetrationElement = document.getElementById('shoe-penetration-fill');
+            if (penetrationElement) {
+                const penetrationPercent = (cardsDealt / cutCardPosition) * 100;
+                penetrationElement.style.width = Math.min(penetrationPercent, 100) + '%';
+            }
+            
+            // Update deviation highlighting
+            updateDeviationHighlights();
+        }
+        
+        // Highlight deviations that are now applicable based on current KO count
+        function updateDeviationHighlights() {
+            const deviations = [
+                { id: 'dev-insurance', threshold: 3 },
+                { id: 'dev-16v10', threshold: -6 },
+                { id: 'dev-15v10', threshold: 4 },
+                { id: 'dev-10v10', threshold: 4 },
+                { id: 'dev-10vA', threshold: 4 },
+                { id: 'dev-12v2', threshold: 4 },
+                { id: 'dev-12v3', threshold: 4 },
+                { id: 'dev-11vA', threshold: -6 },
+                { id: 'dev-13v2', threshold: -6 },
+                { id: 'dev-9v2', threshold: 4 },
+                { id: 'dev-9v7', threshold: 4 },
+                { id: 'dev-12v4', threshold: -6 }
+            ];
+            
+            deviations.forEach(dev => {
+                const element = document.getElementById(dev.id);
+                if (element) {
+                    if (koRunningCount >= dev.threshold) {
+                        element.classList.add('deviation-active');
+                    } else {
+                        element.classList.remove('deviation-active');
+                    }
+                }
+            });
+        }
 
-        // --- Check Action & Update Mastery (REVISED LOGIC v6.2) ---
-        function checkAction(playerAction) {
-            if (!isPlayerTurn && playerAction !== null) return;
+        // Calculate hand value
+        function calculateHand(hand) {
+            let total = 0;
+            let aces = 0;
 
-            let correctActionCode;
-            let initialCorrectActionCode = null; // Store initial decision separately for context
+            for (let card of hand) {
+                total += card.numValue;
+                if (card.value === 'A') aces++;
+            }
 
-            // 1. Determine the correct action code
-            if (isFirstAction && initialHandState) {
-                 // On first action, get the full initial strategy
-                 correctActionCode = getInitialCorrectActionCode(initialHandState.playerCards, getStrategyRank(initialHandState.dealerUpCard));
-                 initialCorrectActionCode = correctActionCode; // Store for later context checks
+            while (total > 21 && aces > 0) {
+                total -= 10;
+                aces--;
+            }
+
+            return {total, soft: aces > 0 && total <= 21};
+        }
+
+        // Display cards
+        function displayCard(card, container, faceDown = false, horizontal = false) {
+            const cardDiv = document.createElement('div');
+            const colorClass = (card.suit === '♥' || card.suit === '♦' ? 'red' : 'black');
+            cardDiv.className = `card ${faceDown ? 'card-back' : colorClass} ${horizontal ? 'horizontal' : ''}`;
+            
+            if (!faceDown) {
+                cardDiv.textContent = `${card.value}${card.suit}`;
             } else {
-                 // On subsequent actions, ONLY check hard/soft totals for the current hand
-                 correctActionCode = getCurrentCorrectActionCode(playerCards, dealerUpCardRank);
-                 // Get initial code just for context if needed later for D/Ds feedback
-                 if (initialHandState) {
-                      initialCorrectActionCode = getInitialCorrectActionCode(initialHandState.playerCards, getStrategyRank(initialHandState.dealerUpCard));
-                 }
+                cardDiv.textContent = '🂠';
             }
+            
+            container.appendChild(cardDiv);
+        }
 
-            // 2. Check if the INITIAL hand was a Y/N situation (for leniency on first action only)
-            const initialRawBSCode = isFirstAction && initialHandState ? getInitialCorrectActionCode(initialHandState.playerCards, getStrategyRank(initialHandState.dealerUpCard), true) : null;
-            const isYNSituation = initialRawBSCode === 'YN';
-
-            // 3. Determine correctness and expected feedback detail
-            let isCorrect = false;
-            let expectedDetail = '';
-            let actionToCheckAgainst = mapStrategyToAction(correctActionCode);
-
-            // Adjust for impossible actions AFTER the first turn
-            if (!isFirstAction) {
-                if (correctActionCode === 'D') actionToCheckAgainst = 'Hit';
-                else if (correctActionCode === 'Ds') actionToCheckAgainst = 'Stand';
-                // If initial action was Split/Surrender, actionToCheckAgainst is already correct (Hit/Stand from getCurrentCorrectActionCode)
+        function updateDisplay() {
+            const dealerHandDiv = document.getElementById('dealer-hand');
+            const playerHandsContainer = document.getElementById('player-hands-container');
+            
+            // Only add new dealer cards
+            for (let i = displayedDealerCards; i < dealerHand.length; i++) {
+                displayCard(dealerHand[i], dealerHandDiv, i === 1 && gameActive);
             }
+            displayedDealerCards = dealerHand.length;
 
-            // Check correctness against the action to check
-            isCorrect = (playerAction === actionToCheckAgainst);
-            expectedDetail = actionToCheckAgainst;
-
-            // Add context for D/Ds situations
-            if (isFirstAction) {
-                 if (correctActionCode === 'D') expectedDetail = 'Double (or Hit if not allowed)';
-                 else if (correctActionCode === 'Ds') expectedDetail = 'Double (or Stand if not allowed)';
-            } else if (initialCorrectActionCode && (initialCorrectActionCode === 'D' || initialCorrectActionCode === 'Ds')) {
-                 // If it's NOT the first action, but the INITIAL action WAS D/Ds
-                 expectedDetail += ` (since ${mapStrategyToAction(initialCorrectActionCode)} is no longer allowed)`;
-            }
-
-            // Override correctness and feedback for Y/N situations on the FIRST action
-            if (isYNSituation && isFirstAction) {
-                const alternativeAction = 'Hit';
-                if (playerAction === 'Split' || playerAction === alternativeAction) {
-                    isCorrect = true;
+            // If game is no longer active and dealer's second card is face down, reveal it
+            if (!gameActive && dealerHandDiv.children.length >= 2) {
+                const secondCard = dealerHandDiv.children[1];
+                if (secondCard.classList.contains('card-back')) {
+                    const card = dealerHand[1];
+                    secondCard.className = `card ${card.suit === '♥' || card.suit === '♦' ? 'red' : 'black'}`;
+                    secondCard.textContent = `${card.value}${card.suit}`;
+                    // Count the hole card now that it's revealed
+                    updateKOCount(card);
                 }
-                expectedDetail = `Split or ${alternativeAction}`;
             }
 
-            // 4. Show feedback & Handle Stats/History
-            if (playerAction !== null) {
-                showFeedback(isCorrect ? "Correct!" : `Error: Basic Strategy says ${expectedDetail}`, isCorrect);
+            // Update dealer total
+            const dealerCalc = calculateHand([dealerHand[0]]);
+            const dealerTotalDiv = document.getElementById('dealer-total');
+            dealerTotalDiv.textContent = gameActive ? `${dealerCalc.total}` :
+                (() => {
+                    const fullDealerCalc = calculateHand(dealerHand);
+                    return fullDealerCalc.soft ? `${fullDealerCalc.total} (Soft)` : fullDealerCalc.total;
+                })();
+            dealerTotalDiv.style.visibility = hideTotals ? 'hidden' : 'visible';
 
-                if (!isYNSituation && currentMode !== 'drill') {
-                    const initialKey = initialHandState?.situationKey;
-                    if (!isCorrect && initialKey && !errorLoggedThisHand) {
-                        errorLoggedThisHand = true; currentStreak = 0; masteryData[initialKey] = 0;
-                        const lastError = errorHistory[errorHistory.length - 1];
-                        if (!lastError || lastError.situationKey !== initialKey || lastError.playerAction !== playerAction) {
-                            errorHistory.push({ playerCards: initialHandState.playerCards, dealerUpCard: initialHandState.dealerUpCard, playerAction: playerAction, correctAction: expectedDetail, situationKey: initialKey });
-                            if (errorHistory.length > MAX_HISTORY_ITEMS * 2) errorHistory.shift();
-                            renderHistory();
-                        }
-                        saveProgress();
-                    } else if (isCorrect && isFirstAction && initialKey && currentMode === 'standard') {
-                        currentStreak++; let masteryCount = masteryData[initialKey] ?? 0; masteryCount++; masteryData[initialKey] = masteryCount;
-                        if (masteryCount >= MASTERY_THRESHOLD) console.log(`Mastered: ${initialKey}`);
-                        saveProgress();
-                    } else if (isCorrect && isFirstAction) {
-                        currentStreak++;
+            // Create or update player hand wrappers
+            playerHands.forEach((hand, handIndex) => {
+                let wrapper = handWrappers[handIndex];
+                
+                // Create wrapper if it doesn't exist
+                if (!wrapper) {
+                    wrapper = document.createElement('div');
+                    wrapper.className = 'player-hand-wrapper';
+                    
+                    if (playerHands.length > 1) {
+                        const label = document.createElement('div');
+                        label.className = 'hand-label';
+                        label.textContent = `Hand ${handIndex + 1}`;
+                        wrapper.appendChild(label);
                     }
-                } else if (isFirstAction) {
-                    if (isCorrect) currentStreak++; else currentStreak = 0;
+                    
+                    const handDiv = document.createElement('div');
+                    handDiv.className = 'hand';
+                    wrapper.appendChild(handDiv);
+                    
+                    const totalDiv = document.createElement('div');
+                    totalDiv.className = 'hand-total';
+                    wrapper.appendChild(totalDiv);
+                    
+                    playerHandsContainer.appendChild(wrapper);
+                    handWrappers[handIndex] = wrapper;
+                    hand.displayedCards = 0;
                 }
-                if (isFirstAction) updateStreakDisplay();
+                
+                // Update active state
+                if (handIndex === currentHandIndex && gameActive) {
+                    wrapper.classList.add('active');
+                } else {
+                    wrapper.classList.remove('active');
+                }
+                
+                // Add only new cards
+                const handDiv = wrapper.querySelector('.hand');
+                for (let i = hand.displayedCards || 0; i < hand.cards.length; i++) {
+                    const isDoubledCard = (i === hand.doubledCardIndex);
+                    displayCard(hand.cards[i], handDiv, false, isDoubledCard);
+                }
+                hand.displayedCards = hand.cards.length;
+                
+                // Update total
+                const totalDiv = wrapper.querySelector('.hand-total');
+                const calc = calculateHand(hand.cards);
+                totalDiv.textContent = calc.soft ? `${calc.total} (Soft)` : calc.total;
+                totalDiv.style.color = 'white';
+                totalDiv.style.visibility = hideTotals ? 'hidden' : 'visible';
+                
+                if (hand.surrendered) {
+                    totalDiv.textContent += ' - SURRENDER';
+                    totalDiv.style.color = '#ffa500';
+                } else if (hand.busted) {
+                    totalDiv.textContent += ' - BUST';
+                    totalDiv.style.color = '#ff6b6b';
+                } else if (hand.stood) {
+                    totalDiv.style.color = '#90ee90';
+                } else if (hand.blackjack) {
+                    totalDiv.textContent = '21 - BLACKJACK';
+                    totalDiv.style.color = '#ffd700';
+                }
+            });
+        }
+
+        // Basic Strategy Logic
+        // Following H17 Basic Strategy (dealer hits soft 17)
+        // DAS (Double After Split) is enabled - you can double on split hands
+        function getCorrectAction() {
+            const currentHand = playerHands[currentHandIndex];
+            const playerCalc = calculateHand(currentHand.cards);
+            const dealerUpCard = dealerHand[0].value;
+            const dealerValue = dealerHand[0].numValue === 11 ? 'A' : dealerHand[0].numValue;
+
+            // Check for pair
+            if (canSplit && currentHand.cards.length === 2 && currentHand.cards[0].value === currentHand.cards[1].value) {
+                const pairValue = currentHand.cards[0].value;
+                if (shouldSplit(pairValue, dealerValue)) {
+                    return 'split';
+                }
+            }
+
+            // Check for soft hand
+            if (playerCalc.soft && playerCalc.total >= 12) {
+                return getSoftAction(playerCalc.total, dealerValue);
+            }
+
+            // Hard hand
+            return getHardAction(playerCalc.total, dealerValue);
+        }
+
+        function shouldSplit(pairValue, dealerValue) {
+            // Pair splitting chart WITH DAS (Double After Split) - treating Y/N as Y
+            const splitChart = {
+                'A': [2,3,4,5,6,7,8,9,10,'A'],  // Always split aces
+                'K': [], 'Q': [], 'J': [], '10': [],  // Never split 10s
+                '9': [2,3,4,5,6,8,9],  // Split vs 2-6,8,9 (not vs 7,10,A)
+                '8': [2,3,4,5,6,7,8,9,10,'A'],  // Always split 8s
+                '7': [2,3,4,5,6,7],  // Split vs 2-7
+                '6': [2,3,4,5,6],  // Split vs 2-6 (with DAS)
+                '5': [],  // Never split 5s
+                '4': [5,6],  // Split vs 5-6 only (with DAS)
+                '3': [2,3,4,5,6,7],  // Split vs 2-7 (with DAS)
+                '2': [2,3,4,5,6,7]  // Split vs 2-7 (with DAS)
+            };
+
+            return splitChart[pairValue]?.includes(dealerValue) || false;
+        }
+
+        function getSoftAction(total, dealerValue) {
+            // Soft totals strategy - following the chart EXACTLY
+            if (total === 21 || total === 20) return 'stand'; // A,9
+            
+            if (total === 19) { // A,8
+                // Ds Ds Ds Ds Ds S S S S S
+                if ([2,3,4,5,6].includes(dealerValue) && canDouble) return 'double';
+                return 'stand';
+            }
+            
+            if (total === 18) { // A,7
+                // Ds Ds Ds Ds Ds S S H H H
+                if ([2,3,4,5,6].includes(dealerValue) && canDouble) return 'double';
+                if ([2,3,4,5,6,7,8].includes(dealerValue)) return 'stand';
+                return 'hit'; // vs 9, 10, A
+            }
+            
+            if (total === 17) { // A,6
+                // H D D D D H H H H H
+                if ([3,4,5,6].includes(dealerValue) && canDouble) return 'double';
+                return 'hit';
+            }
+            
+            if (total === 16 || total === 15) { // A,5 or A,4
+                // H H D D D H H H H H
+                if ([4,5,6].includes(dealerValue) && canDouble) return 'double';
+                return 'hit';
+            }
+            
+            if (total === 14 || total === 13) { // A,3 or A,2
+                // H H H D D H H H H H
+                if ([5,6].includes(dealerValue) && canDouble) return 'double';
+                return 'hit';
+            }
+            
+            return 'hit';
+        }
+
+        function getHardAction(total, dealerValue) {
+            // Hard totals strategy - following the chart EXACTLY
+            if (total >= 17) return 'stand';
+            
+            if (total >= 13 && total <= 16) {
+                // Stand vs 2-6, hit vs 7+
+                return [2,3,4,5,6].includes(dealerValue) ? 'stand' : 'hit';
+            }
+            
+            if (total === 12) {
+                // Hit vs 2-3, stand vs 4-6, hit vs 7+
+                return [4,5,6].includes(dealerValue) ? 'stand' : 'hit';
+            }
+            
+            if (total === 11) {
+                // Always double if allowed
+                return canDouble ? 'double' : 'hit';
+            }
+            
+            if (total === 10) {
+                // Double vs 2-9, hit vs 10,A
+                return ([2,3,4,5,6,7,8,9].includes(dealerValue) && canDouble) ? 'double' : 'hit';
+            }
+            
+            if (total === 9) {
+                // Hit vs 2, double vs 3-6, hit vs 7+
+                return ([3,4,5,6].includes(dealerValue) && canDouble) ? 'double' : 'hit';
+            }
+            
+            // 8 or less: always hit
+            return 'hit';
+        }
+
+        // Sound effects using Web Audio API
+        function playSound(frequency, duration) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function playCorrectSound() {
+            playSound(800, 0.1);
+            setTimeout(() => playSound(1000, 0.15), 100);
+        }
+
+        function playWinSound() {
+            playSound(523, 0.1);
+            setTimeout(() => playSound(659, 0.1), 100);
+            setTimeout(() => playSound(784, 0.2), 200);
+        }
+
+        // Show message
+        function showMessage(text, type = 'info') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.classList.add('pulse');
+            setTimeout(() => messageDiv.classList.remove('pulse'), 500);
+        }
+
+        // Start new hand
+        function startNewHand() {
+            if (currentBet === 0) {
+                showMessage('Please place a bet first!', 'warning');
+                return;
+            }
+            
+            if (bankroll < currentBet) {
+                showMessage('Not enough money! Game Over. Refresh to restart.', 'error');
+                document.getElementById('new-hand-btn').disabled = true;
+                document.getElementById('auto-deal-checkbox').disabled = true;
+                return;
+            }
+
+            playerHands = [{
+                cards: [], 
+                busted: false, 
+                stood: false, 
+                blackjack: false, 
+                displayedCards: 0,
+                betAmount: currentBet,
+                doubled: false,
+                doubledCardIndex: -1,
+                surrendered: false
+            }];
+            dealerHand = [];
+            currentHandIndex = 0;
+            gameActive = true;
+            awaitingFirstAction = true;
+            displayedDealerCards = 0;
+            splitAces = false;
+            handWrappers = [];
+            currentHandInitialEV = 0; // Reset EV for the hand
+
+            // Deduct initial bet
+            bankroll -= currentBet;
+            updateStats();
+            updateChipStates(); // Disable chips during active game
+
+            // Clear the displays
+            document.getElementById('dealer-hand').innerHTML = '';
+            document.getElementById('player-hands-container').innerHTML = '';
+
+            // Deal initial cards
+            playerHands[0].cards.push(dealCard());
+            dealerHand.push(dealCard());
+            playerHands[0].cards.push(dealCard());
+            dealerHand.push(dealCard(false)); // Hole card - don't count until revealed
+
+            updateDisplay();
+            
+            // --- ADDED: EV Calculation ---
+            // Must happen *after* cards are dealt but *before* blackjack check
+            const initialEV = getInitialEV(playerHands[0].cards, dealerHand[0]);
+            currentHandInitialEV = initialEV * currentBet; // Store the $EV
+            cumulativeEV += currentHandInitialEV;
+            // --- END: EV Calculation ---
+
+
+            // Check for blackjacks
+            const playerCalc = calculateHand(playerHands[0].cards);
+            const dealerCalc = calculateHand(dealerHand);
+            
+            // Dealer peeks for blackjack when showing Ace or 10
+            const dealerUpCard = dealerHand[0];
+            const shouldPeek = dealerUpCard.value === 'A' || dealerUpCard.numValue === 10;
+            
+            if (shouldPeek && dealerCalc.total === 21) {
+                // Dealer has blackjack - reveal it immediately
+                gameActive = false;
+                updateDisplay();
+                
+                if (playerCalc.total === 21) {
+                    showMessage('Push! Both have Blackjack.', 'warning');
+                    bankroll += currentBet; // Return bet
+                    
+                    // --- ADDED: Graph update for Push ---
+                    // netProfit is 0 (bet was -100, returned +100)
+                    cumulativeProfit += 0;
+                    updateGraphs(0, currentHandInitialEV);
+                    // --- END: Graph update ---
+                    
+                } else {
+                    showMessage('Dealer Blackjack! You lose $' + currentBet, 'error');
+                    // Bet already deducted
+                    
+                    // --- ADDED: Graph update for Loss ---
+                    // netProfit is -100 (bet was -100, got 0 back)
+                    cumulativeProfit -= currentBet;
+                    updateGraphs(-currentBet, currentHandInitialEV);
+                    // --- END: Graph update ---
+                }
+                
+                handsPlayed++;
+                updateStats();
+                updateChipStates(); // Re-enable chips after hand ends
+                updatePresetBet(); // Recalculate bet for next hand if preset enabled
+                document.getElementById('new-hand-btn').disabled = false;
+                
+                // Auto-deal if enabled
+                if (autoDealEnabled && currentBet > 0 && bankroll >= currentBet) {
+                    setTimeout(() => startNewHand(), redealSpeed);
+                }
+                return;
+            }
+            
+            // Check for player blackjack (dealer doesn't have it)
+            if (playerCalc.total === 21) {
+                playerHands[0].blackjack = true;
+                handlePlayerBlackjack();
+                return;
+            }
+
+            // Enable appropriate buttons
+            updateButtonStates();
+
+            showMessage('Make your play based on Basic Strategy!', 'info');
+            
+            // Check if this hand qualifies for auto-play
+            setTimeout(() => {
+                let autoAction = checkAutoPlayEasyHand();
+                if (!autoAction) {
+                    autoAction = checkAutoPlayMediumHand();
+                }
+
+                // New check for Auto Play Hits
+                if (!autoAction && checkAutoPlayHits()) {
+                    return; // The auto-play is being handled by autoHitLoop
+                }
+                
+                if (autoAction) {
+                    showMessage('Auto-playing: ' + autoAction.toUpperCase(), 'info');
+                    setTimeout(() => {
+                        playerAction(autoAction, true); // true = skip correct/incorrect tracking
+                    }, 500);
+                }
+            }, 100);
+        }
+
+        function handlePlayerBlackjack() {
+            gameActive = false;
+            updateDisplay();
+
+            // Dealer doesn't have blackjack (already checked in startNewHand)
+            // Player blackjack pays 3:2 - return original bet plus 1.5x winnings
+            const payout = currentBet * 2.5; // Original bet + 1.5x bet
+            const winnings = currentBet * 1.5;
+            bankroll += payout;
+            showMessage('Blackjack! You win $' + winnings + '!', 'success');
+            playWinSound();
+
+            handsPlayed++;
+            
+            // --- ADDED: Graph update for Blackjack Win ---
+            cumulativeProfit += winnings;
+            updateGraphs(winnings, currentHandInitialEV);
+            // --- END: Graph update ---
+            
+            updateStats();
+            updateChipStates(); // Re-enable chips after hand ends
+            updatePresetBet(); // Recalculate bet for next hand if preset enabled
+            document.getElementById('new-hand-btn').disabled = false;
+
+            // Auto-deal next hand if enabled
+            if (autoDealEnabled && currentBet > 0 && bankroll >= currentBet) {
+                setTimeout(() => {
+                    startNewHand();
+                }, redealSpeed);
             }
         }
 
-
-        // --- Dealer Logic & Payouts ---
-        function dealerTurn(){renderHands(!0);dealerTotal=calculateHandTotal(dealerCards);if(playerTotal>21){endHand(!0);return}showMessage(`Dealer reveals ${dealerTotal}.`);function dHL(){if(dealerTotal<17||(dealerTotal===17&&isSoftHand(dealerCards))){showMessage(`Dealer hits on ${dealerTotal}...`);if(deck.length===0){console.error("Deck empty dealer");showMessage("Error: Deck empty.");endHand(!0);return}dealerCards.push(deck.pop());dealerTotal=calculateHandTotal(dealerCards);renderHands(!0);setTimeout(dHL,600)}else{if(dealerTotal>21){showMessage(`Dealer Busts (${dealerTotal})!`+(currentMode==='standard'?` You win $${currentBet}!`:''));if(currentMode==='standard')playerChips+=currentBet*2}else{showMessage(`Dealer Stands on ${dealerTotal}.`);determineWinnerAndPayout()}endHand()}}setTimeout(dHL,500)}
-        function determineWinnerAndPayout(){if(playerTotal>dealerTotal){showMessage(`You Win`+(currentMode==='standard'?` $${currentBet}!`:'!'),!0);if(currentMode==='standard')playerChips+=currentBet*2}else if(dealerTotal>playerTotal){showMessage(`Dealer Wins.`+(currentMode==='standard'?` You lose $${currentBet}.`:''),!0)}else{showMessage("Push (Tie).",!0);if(currentMode==='standard')playerChips+=currentBet}}
-
-        // --- End Hand ---
-        function endHand(immediate = false) {
-            isPlayerTurn = false; playerCanHit = false; isFirstAction = false; handOver = true;
-            if (!immediate) renderHands(true);
-            if (currentMode === 'standard') saveProgress();
-            currentBet = 0; initialBet = 0; initialHandState = null;
-            updateBettingDisplay(); updateButtonStates();
-            if (currentMode === 'standard' && playerChips < BASE_BET) showMessage(" Game Over! Not enough chips for the next hand. ", true);
+        // Update button states based on current hand
+        function updateButtonStates() {
+            const currentHand = playerHands[currentHandIndex];
+            
+            // Can only split on first action, with 2 cards of same value, up to 4 hands total, and enough money
+            canSplit = awaitingFirstAction && 
+                       currentHand.cards.length === 2 && 
+                       currentHand.cards[0].value === currentHand.cards[1].value && 
+                       playerHands.length < 4 && 
+                       bankroll >= currentBet;
+            
+            // Can double on first action with enough money (need to match current hand's bet)
+            canDouble = awaitingFirstAction && bankroll >= currentHand.betAmount;
+            
+            document.getElementById('hit-btn').disabled = false;
+            document.getElementById('stand-btn').disabled = false;
+            document.getElementById('double-btn').disabled = !canDouble;
+            document.getElementById('split-btn').disabled = !canSplit;
+            document.getElementById('new-hand-btn').disabled = true;
         }
 
-        // --- Tone.js Sound Setup ---
-        const clickSound = new Tone.AMSynth({
-            harmonicity: 1.5,
-            envelope: { attack: 0.001, decay: 0.05, sustain: 0.01, release: 0.05 },
-            modulationEnvelope: { attack: 0.002, decay: 0.1, sustain: 0, release: 0.1 },
-            volume: -15
-        }).toDestination();
+        // Player actions
+        function playerAction(action, isAutoPlay = false) {
+            if (!gameActive) return;
 
-        function playClickSound() {
-             try {
-                  Tone.start().then(() => {
-                     clickSound.triggerAttackRelease("C5", "32n");
-                  }).catch(e => console.error("Tone.start promise rejected:", e));
-             } catch (e) {
-                  console.error("Error initiating Tone.start:", e);
-             }
+            const currentHand = playerHands[currentHandIndex];
+            const correctAction = getCorrectAction();
+            
+            // Check if it's the correct play (only if not auto-playing)
+            if (awaitingFirstAction && !isAutoPlay) {
+                totalDecisions++;
+                if (action === correctAction) {
+                    correctPlays++;
+                    playCorrectSound();
+                    showMessage('✓ Correct! ' + action.toUpperCase(), 'success');
+                } else {
+                    showMessage('✗ Wrong! Should ' + correctAction.toUpperCase() + ', but you chose ' + action.toUpperCase(), 'error');
+                    document.getElementById('game-container').classList.add('shake');
+                    setTimeout(() => document.getElementById('game-container').classList.remove('shake'), 500);
+                }
+                awaitingFirstAction = false;
+                updateStats();
+            } else if (isAutoPlay) {
+                // Still mark as not awaiting first action, but don't count it
+                awaitingFirstAction = false;
+            }
+
+            // Execute action
+            switch(action) {
+                case 'surrender':
+                    // Surrender: get back half the bet
+                    currentHand.stood = true;
+                    currentHand.surrendered = true;
+                    bankroll += currentHand.betAmount * 0.5; // Get half back
+                    updateStats();
+                    updateDisplay();
+                    moveToNextHand();
+                    break;
+
+                case 'hit':
+                    currentHand.cards.push(dealCard());
+                    updateDisplay();
+                    
+                    const playerCalc = calculateHand(currentHand.cards);
+                    if (playerCalc.total > 21) {
+                        currentHand.busted = true;
+                        updateDisplay();
+                        moveToNextHand();
+                    } else if (playerCalc.total === 21) {
+                        currentHand.stood = true;
+                        moveToNextHand();
+                    } else {
+                        // Can't double or split after first action
+                        canDouble = false;
+                        canSplit = false;
+                        document.getElementById('double-btn').disabled = true;
+                        document.getElementById('split-btn').disabled = true;
+                    }
+                    break;
+
+                case 'stand':
+                    currentHand.stood = true;
+                    updateDisplay();
+                    moveToNextHand();
+                    break;
+
+                case 'double':
+                    // Deduct the additional bet
+                    if (bankroll >= currentHand.betAmount) {
+                        bankroll -= currentHand.betAmount;
+                        currentHand.betAmount *= 2;
+                        currentHand.doubled = true;
+                        currentHand.doubledCardIndex = currentHand.cards.length; // Mark the next card as doubled
+                        updateStats();
+                        
+                        currentHand.cards.push(dealCard());
+                        updateDisplay();
+                        
+                        const calc = calculateHand(currentHand.cards);
+                        if (calc.total > 21) {
+                            currentHand.busted = true;
+                        } else {
+                            currentHand.stood = true;
+                        }
+                        updateDisplay();
+                        moveToNextHand();
+                    }
+                    break;
+
+                case 'split':
+                    if (playerHands.length < 4 && bankroll >= currentBet) {
+                        // Deduct bet for new hand
+                        bankroll -= currentBet;
+                        updateStats();
+                        
+                        // Check if splitting aces
+                        const isAces = currentHand.cards[0].value === 'A';
+                        if (isAces) {
+                            splitAces = true;
+                        }
+                        
+                        // Create new hand with second card
+                        const secondCard = currentHand.cards.pop();
+                        
+                        // Clear the current hand's display so it rebuilds with just one card
+                        if (handWrappers[currentHandIndex]) {
+                            const handDiv = handWrappers[currentHandIndex].querySelector('.hand');
+                            handDiv.innerHTML = '';
+                        }
+                        currentHand.displayedCards = 0;
+                        
+                        playerHands.push({
+                            cards: [secondCard], 
+                            busted: false, 
+                            stood: false, 
+                            blackjack: false,
+                            displayedCards: 0,
+                            betAmount: currentBet,
+                            doubled: false,
+                            doubledCardIndex: -1,
+                            surrendered: false
+                        });
+                        
+                        // Deal one card to each hand
+                        currentHand.cards.push(dealCard());
+                        playerHands[playerHands.length - 1].cards.push(dealCard());
+                        
+                        updateDisplay();
+                        
+                        // If split aces, both hands are done
+                        if (isAces) {
+                            currentHand.stood = true;
+                            playerHands[playerHands.length - 1].stood = true;
+                            updateDisplay();
+                            dealerPlay();
+                        } else {
+                            // Continue with current hand
+                            awaitingFirstAction = true;
+                            updateButtonStates();
+                        }
+                    }
+                    break;
+            }
         }
 
-        // --- Event Listeners ---
-        btnDeal.addEventListener('click', ()=>{ playClickSound(); dealNewHand(); });
-        btnHit.addEventListener('click', ()=>{ playClickSound(); playerHit(); });
-        btnStand.addEventListener('click', ()=>{ playClickSound(); playerStand(); });
-        btnDouble.addEventListener('click', ()=>{ playClickSound(); playerDouble(); });
-        btnSplit.addEventListener('click', ()=>{ playClickSound(); playerSplit(); });
-        btnSurrender.addEventListener('click', ()=>{ playClickSound(); playerSurrender(); });
-        // Mode switching listeners
-        modeStandardRadio.addEventListener('change', () => setMode('standard'));
-        modeLearningRadio.addEventListener('change', () => setMode('learning'));
-        modeDrillRadio.addEventListener('change', () => setMode('drill'));
-        // Drill category listeners
-        drillCategorySelector.addEventListener('change', (event) => { if (event.target.name === 'drill-category') { currentDrillCategory = event.target.value; console.log("Drill category set to:", currentDrillCategory); } });
+        function moveToNextHand() {
+            currentHandIndex++;
+            
+            // Check if there are more hands to play
+            if (currentHandIndex < playerHands.length) {
+                const nextHand = playerHands[currentHandIndex];
+                
+                // If this hand is from split aces, it's automatically done
+                if (splitAces) {
+                    moveToNextHand();
+                    return;
+                }
+                
+                awaitingFirstAction = true;
+                updateDisplay();
+                updateButtonStates();
+                showMessage(`Playing Hand ${currentHandIndex + 1}. Make your play!`, 'info');
+                
+                // Check if this hand qualifies for auto-play
+                setTimeout(() => {
+                    let autoAction = checkAutoPlayEasyHand();
+                    if (!autoAction) {
+                        autoAction = checkAutoPlayMediumHand();
+                    }
 
-        // --- Initial Setup ---
-        window.addEventListener('load', () => {
-            loadProgress();
-            setMode('standard');
-            modeStandardRadio.checked = true;
-            document.getElementById('drill-pairs').checked = true;
-            currentDrillCategory = 'pairs';
-            handOver = true;
-            updateButtonStates();
-            showMessage("Select mode and click 'Deal New Hand'.");
-        });
+                    // New check for Auto Play Hits
+                    if (!autoAction && checkAutoPlayHits()) {
+                        return; // The auto-play is being handled by autoHitLoop
+                    }
+                    
+                    if (autoAction) {
+                        showMessage(`Hand ${currentHandIndex + 1}: Auto-playing ` + autoAction.toUpperCase(), 'info');
+                        setTimeout(() => {
+                            playerAction(autoAction, true); // true = skip correct/incorrect tracking
+                        }, 500);
+                    }
+                }, 100);
+            } else {
+                // All hands played, dealer's turn
+                dealerPlay();
+            }
+        }
 
+        function dealerPlay() {
+            gameActive = false;
+            updateDisplay();
+
+            setTimeout(() => {
+                let dealerCalc = calculateHand(dealerHand);
+                
+                const dealInterval = setInterval(() => {
+                    dealerCalc = calculateHand(dealerHand);
+                    
+                    // Dealer hits on soft 17 (H17 rules)
+                    if (dealerCalc.total < 17 || (dealerCalc.total === 17 && dealerCalc.soft)) {
+                        dealerHand.push(dealCard());
+                        updateDisplay();
+                    } else {
+                        clearInterval(dealInterval);
+                        endHand();
+                    }
+                }, 600);
+            }, 500);
+
+            // Disable all action buttons
+            document.getElementById('hit-btn').disabled = true;
+            document.getElementById('stand-btn').disabled = true;
+            document.getElementById('double-btn').disabled = true;
+            document.getElementById('split-btn').disabled = true;
+        }
+
+        function endHand() {
+            gameActive = false;
+            handsPlayed++;
+
+            const dealerCalc = calculateHand(dealerHand);
+            let totalWinLoss = 0;
+            let winCount = 0;
+            let loseCount = 0;
+            let pushCount = 0;
+            let surrenderCount = 0;
+            let totalInvested = 0;
+            
+            // Evaluate each hand
+            playerHands.forEach((hand, index) => {
+                const playerCalc = calculateHand(hand.cards);
+                let handResult = '';
+                let handWinLoss = 0;
+                
+                totalInvested += hand.betAmount;
+                
+                // Skip surrendered hands - already resolved
+                if (hand.surrendered) {
+                    surrenderCount++;
+                    handWinLoss = hand.betAmount * 0.5; // Already added to bankroll
+                    // Don't add to totalWinLoss since it was already added
+                    return;
+                }
+                
+                if (hand.busted) {
+                    handResult = 'BUST';
+                    handWinLoss = 0; // Already deducted
+                    loseCount++;
+                } else if (dealerCalc.total > 21) {
+                    handResult = 'WIN';
+                    handWinLoss = hand.betAmount * 2; // Return bet + winnings
+                    winCount++;
+                } else if (playerCalc.total > dealerCalc.total) {
+                    handResult = 'WIN';
+                    handWinLoss = hand.betAmount * 2; // Return bet + winnings
+                    winCount++;
+                } else if (playerCalc.total < dealerCalc.total) {
+                    handResult = 'LOSE';
+                    handWinLoss = 0; // Already deducted
+                    loseCount++;
+                } else {
+                    handResult = 'PUSH';
+                    handWinLoss = hand.betAmount; // Return bet
+                    pushCount++;
+                }
+                
+                totalWinLoss += handWinLoss;
+            });
+            
+            bankroll += totalWinLoss;
+            
+            // Calculate net profit (what you got back minus what you invested)
+            let netProfit = totalWinLoss - totalInvested + (surrenderCount * currentBet * 0.5);
+            
+            // --- ADDED: Graph update for completed hand ---
+            cumulativeProfit += netProfit;
+            updateGraphs(netProfit, currentHandInitialEV);
+            // --- END: Graph update ---
+            
+            
+            // Show result message
+            let message = '';
+            
+            if (playerHands.length === 1) {
+                const hand = playerHands[0];
+                if (hand.surrendered) {
+                    message = `Surrendered. Lost $${hand.betAmount * 0.5}`;
+                } else if (winCount === 1) {
+                    message = `You win $${hand.betAmount}!`;
+                    playWinSound();
+                } else if (loseCount === 1) {
+                    message = `You lose $${hand.betAmount}`;
+                } else {
+                    message = 'Push! Bet returned.';
+                }
+            } else {
+                const resultParts = [];
+                if (winCount > 0) resultParts.push(`${winCount}W`);
+                if (loseCount > 0) resultParts.push(`${loseCount}L`);
+                if (pushCount > 0) resultParts.push(`${pushCount}P`);
+                if (surrenderCount > 0) resultParts.push(`${surrenderCount}SUR`);
+                
+                message = resultParts.join('-') + '. ';
+                if (netProfit > 0) {
+                    message += `Net: +$${netProfit}`;
+                    playWinSound();
+                } else if (netProfit < 0) {
+                    message += `Net: -$${Math.abs(netProfit)}`;
+                } else {
+                    message += 'Break even';
+                }
+            }
+            
+            showMessage(message, netProfit >= 0 ? 'success' : 'error');
+            
+            updateStats();
+            updateChipStates(); // Re-enable chips after hand ends
+            updatePresetBet(); // Recalculate bet for next hand if preset enabled
+            document.getElementById('new-hand-btn').disabled = false;
+
+            // Auto-deal next hand if enabled
+            if (autoDealEnabled && currentBet > 0 && bankroll >= currentBet) {
+                setTimeout(() => {
+                    startNewHand();
+                }, redealSpeed);
+            }
+        }
+
+        function toggleAutoDeal() {
+            autoDealEnabled = document.getElementById('auto-deal-checkbox').checked;
+            if (autoDealEnabled && !gameActive && currentBet > 0 && bankroll >= currentBet) {
+                // If turning on auto-deal and no game is active, start immediately
+                setTimeout(() => {
+                    if (!gameActive && autoDealEnabled) {
+                        startNewHand();
+                    }
+                }, 500);
+            }
+        }
+
+        function toggleAutoPlay() {
+            autoPlayEasyHands = document.getElementById('auto-play-checkbox').checked;
+        }
+
+        function toggleAutoPlayMedium() {
+            autoPlayMediumHands = document.getElementById('auto-play-medium-checkbox').checked;
+        }
+
+        function toggleAutoPlayHits() {
+            autoPlayHits = document.getElementById('auto-play-hits-checkbox').checked;
+        }
+
+        function toggleHideTotals() {
+            hideTotals = document.getElementById('hide-totals-checkbox').checked;
+            updateDisplay(); // Refresh display to show/hide totals
+        }
+        
+        function toggleBettingPreset() {
+            bettingPresetEnabled = document.getElementById('betting-preset-checkbox').checked;
+            const unitSizeContainer = document.getElementById('unit-size-container');
+            const rampConfig = document.getElementById('betting-ramp-config');
+            
+            if (bettingPresetEnabled) {
+                unitSizeContainer.style.display = 'flex';
+                rampConfig.classList.add('visible');
+                // Calculate and set initial bet based on current count
+                updatePresetBet();
+                // Disable manual chip betting
+                updateChipStates();
+                showMessage('KO Betting Preset enabled - bet automatically adjusted by count', 'info');
+            } else {
+                unitSizeContainer.style.display = 'none';
+                rampConfig.classList.remove('visible');
+                // Re-enable manual betting
+                updateChipStates();
+                showMessage('Manual betting enabled', 'info');
+            }
+        }
+        
+        function updateUnitSize() {
+            const input = document.getElementById('unit-size-input');
+            unitSize = parseInt(input.value) || 100;
+            if (bettingPresetEnabled && !gameActive) {
+                updatePresetBet();
+            }
+        }
+        
+        function updateBettingRamp() {
+            // Read values from inputs and update the betting ramp
+            bettingRamp[0].units = parseInt(document.getElementById('ramp-rc-5').value) || 1;
+            bettingRamp[1].units = parseInt(document.getElementById('ramp-rc-4').value) || 2;
+            bettingRamp[2].units = parseInt(document.getElementById('ramp-rc-3').value) || 3;
+            bettingRamp[3].units = parseInt(document.getElementById('ramp-rc-2').value) || 4;
+            bettingRamp[4].units = parseInt(document.getElementById('ramp-rc-1').value) || 6;
+            bettingRamp[5].units = parseInt(document.getElementById('ramp-rc0').value) || 8;
+            bettingRamp[6].units = parseInt(document.getElementById('ramp-rc1').value) || 10;
+            bettingRamp[7].units = parseInt(document.getElementById('ramp-rc2').value) || 12;
+            
+            // Recalculate bet if preset is enabled and not in active game
+            if (bettingPresetEnabled && !gameActive) {
+                updatePresetBet();
+            }
+        }
+        
+        function toggleRampConfig() {
+            const rampConfig = document.getElementById('betting-ramp-config');
+            const toggleBtn = rampConfig.querySelector('.config-toggle-btn');
+            
+            if (rampConfig.querySelector('.ramp-grid').style.display === 'none') {
+                rampConfig.querySelector('.ramp-grid').style.display = 'grid';
+                toggleBtn.textContent = 'Hide Configuration';
+            } else {
+                rampConfig.querySelector('.ramp-grid').style.display = 'none';
+                toggleBtn.textContent = 'Show Configuration';
+            }
+        }
+        
+        function updatePresetBet() {
+            // Only update preset bet when not in an active game
+            if (!bettingPresetEnabled || gameActive) return;
+            
+            currentBet = calculatePresetBet();
+            updateBetDisplay();
+        }
+        
+        function calculatePresetBet() {
+            // Find the appropriate bet based on running count
+            // The ramp is ordered from lowest to highest RC
+            let units = bettingRamp[0].units; // Default to lowest bet
+            
+            for (let i = bettingRamp.length - 1; i >= 0; i--) {
+                if (koRunningCount >= bettingRamp[i].rc) {
+                    units = bettingRamp[i].units;
+                    break;
+                }
+            }
+            
+            return units * unitSize;
+        }
+
+        function updateRedealSpeed() {
+            const slider = document.getElementById('redeal-speed-slider');
+            redealSpeed = parseInt(slider.value);
+            document.getElementById('slider-value').textContent = (redealSpeed / 1000).toFixed(1) + 's';
+        }
+
+        // Check if current hand qualifies for auto-play easy (only on first decision)
+        function checkAutoPlayEasyHand() {
+            if (!autoPlayEasyHands || !awaitingFirstAction) return null;
+            
+            const currentHand = playerHands[currentHandIndex];
+            
+            // Only works on initial two cards
+            if (currentHand.cards.length !== 2) return null;
+            
+            const calc = calculateHand(currentHand.cards);
+            const dealerUpCard = dealerHand[0].numValue === 11 ? 'A' : dealerHand[0].numValue;
+            
+            // Auto surrender - ONLY on initial hand before any splits
+            // Cannot surrender after splitting
+            if (playerHands.length === 1 && currentHandIndex === 0) {
+                // Auto surrender hard 16 vs dealer 9, 10, A
+                if (!calc.soft && calc.total === 16) {
+                    if ([9, 10, 'A'].includes(dealerUpCard)) {
+                        return 'surrender';
+                    }
+                }
+                
+                // Auto surrender hard 15 vs dealer 10
+                if (!calc.soft && calc.total === 15) {
+                    if (dealerUpCard === 10) {
+                        return 'surrender';
+                    }
+                }
+            }
+            
+            // Auto split aces
+            if (currentHand.cards[0].value === 'A' && currentHand.cards[1].value === 'A') {
+                if (canSplit) return 'split';
+            }
+            
+            // Auto stand soft 20 (A,9)
+            if (calc.soft && calc.total === 20) {
+                return 'stand';
+            }
+            
+            // Auto stand soft 19 if dealer doesn't have 6 (A,8)
+            if (calc.soft && calc.total === 19 && dealerUpCard !== 6) {
+                return 'stand';
+            }
+            
+            // Auto stand hard 17, 18, 19, 20, 21
+            if (!calc.soft && calc.total >= 17 && calc.total <= 21) {
+                return 'stand';
+            }
+            
+            return null;
+        }
+
+        // Check if current hand qualifies for auto-play medium (only on first decision)
+        function checkAutoPlayMediumHand() {
+            if (!autoPlayMediumHands || !awaitingFirstAction) return null;
+            
+            const currentHand = playerHands[currentHandIndex];
+            
+            // Only works on initial two cards
+            if (currentHand.cards.length !== 2) return null;
+            
+            const calc = calculateHand(currentHand.cards);
+            const dealerUpCard = dealerHand[0].numValue === 11 ? 'A' : dealerHand[0].numValue;
+            
+            // Don't auto-play pairs - they should be evaluated for splitting
+            if (currentHand.cards[0].value === currentHand.cards[1].value) {
+                return null;
+            }
+            
+            // Auto stand hard 13-16 vs dealer 2-6 (stiff hands - stand hoping dealer busts)
+            if (!calc.soft && calc.total >= 13 && calc.total <= 16) {
+                if ([2, 3, 4, 5, 6].includes(dealerUpCard)) {
+                    return 'stand';
+                }
+            }
+            
+            return null;
+        }
+
+        // Check if current hand qualifies for "Auto Play Hits"
+        function checkAutoPlayHits() {
+            if (!autoPlayHits || !awaitingFirstAction) return false;
+
+            const currentHand = playerHands[currentHandIndex];
+            
+            // Only on initial two cards
+            if (currentHand.cards.length !== 2) return false;
+            
+            const calc = calculateHand(currentHand.cards);
+            const dealerUpValue = dealerHand[0].numValue;
+            
+            // Condition 1: Dealer shows 7 or up
+            if (dealerUpValue < 7) return false;
+            
+            // Condition 2: Not a double opportunity (hard 10 or 11)
+            if (!calc.soft && (calc.total === 10 || calc.total === 11)) return false;
+            
+            // Condition 3: Not a split opportunity
+            if (canSplit) return false;
+            
+            // Condition 4: Player has hard 16 or less
+            if (!calc.soft && calc.total <= 16) {
+                // All conditions met. Start the auto-hit loop.
+                showMessage(`Hand ${currentHandIndex + 1}: Auto-hitting vs ${dealerHand[0].value}`, 'info');
+                
+                // Mark as not awaiting first action so it doesn't get scored
+                awaitingFirstAction = false;
+                
+                // Start the hit loop
+                autoHitLoop(currentHand);
+                return true; // Auto-play was triggered
+            }
+            
+            return false;
+        }
+
+        function autoHitLoop(hand) {
+            // Disable buttons during the loop
+            document.getElementById('hit-btn').disabled = true;
+            document.getElementById('stand-btn').disabled = true;
+            document.getElementById('double-btn').disabled = true;
+            document.getElementById('split-btn').disabled = true;
+            
+            const hitInterval = setInterval(() => {
+                let calc = calculateHand(hand.cards);
+                
+                // Continue hitting if hard 16 or less
+                if (!calc.soft && calc.total <= 16) {
+                    hand.cards.push(dealCard());
+                    updateDisplay();
+                } else {
+                    // Stop hitting
+                    clearInterval(hitInterval);
+                    
+                    // Check bust or stand
+                    calc = calculateHand(hand.cards); // re-calculate after last hit
+                    if (calc.total > 21) {
+                        hand.busted = true;
+                    } else {
+                        hand.stood = true; // Stood on 17+
+                    }
+                    updateDisplay();
+                    moveToNextHand();
+                }
+            }, 600); // 600ms delay per hit
+        }
+        
+        // Betting Control Functions
+        function addChipToBet(amount) {
+            // Don't allow betting during an active game
+            if (gameActive) {
+                showMessage('Cannot change bet during active hand', 'warning');
+                return;
+            }
+            
+            // Check if player has enough bankroll
+            if (bankroll < currentBet + amount) {
+                showMessage('Not enough bankroll!', 'error');
+                return;
+            }
+            
+            currentBet += amount;
+            updateBetDisplay();
+            playSound(600, 0.05); // Chip sound
+        }
+        
+        function clearBet() {
+            if (gameActive) {
+                showMessage('Cannot change bet during active hand', 'warning');
+                return;
+            }
+            
+            currentBet = 0;
+            updateBetDisplay();
+        }
+        
+        function updateBetDisplay() {
+            // During an active game, show the actual bet being played (from the hands)
+            // Otherwise show the current bet for the next hand
+            let displayAmount = currentBet;
+            
+            if (gameActive && playerHands.length > 0) {
+                // Show the actual bet amount from the current hand being played
+                displayAmount = playerHands.reduce((sum, hand) => sum + hand.betAmount, 0);
+            }
+            
+            document.getElementById('current-bet-amount').textContent = '$' + displayAmount;
+            updateChipStates();
+            updateStats();
+        }
+        
+        function updateChipStates() {
+            // Disable chips if bankroll is too low or if game is active or if betting preset is enabled
+            const chip25 = document.getElementById('chip-25');
+            const chip100 = document.getElementById('chip-100');
+            const chip500 = document.getElementById('chip-500');
+            const clearBtn = document.getElementById('clear-bet-btn');
+            
+            if (gameActive || bettingPresetEnabled) {
+                chip25.classList.add('chip-disabled');
+                chip100.classList.add('chip-disabled');
+                chip500.classList.add('chip-disabled');
+                clearBtn.disabled = true;
+            } else {
+                // Enable/disable based on bankroll
+                if (bankroll >= currentBet + 25) {
+                    chip25.classList.remove('chip-disabled');
+                } else {
+                    chip25.classList.add('chip-disabled');
+                }
+                
+                if (bankroll >= currentBet + 100) {
+                    chip100.classList.remove('chip-disabled');
+                } else {
+                    chip100.classList.add('chip-disabled');
+                }
+                
+                if (bankroll >= currentBet + 500) {
+                    chip500.classList.remove('chip-disabled');
+                } else {
+                    chip500.classList.add('chip-disabled');
+                }
+                
+                clearBtn.disabled = (currentBet === 0);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('bankroll').textContent = '$' + bankroll.toLocaleString();
+            
+            // Calculate total bet amount at risk
+            const totalBetAmount = gameActive ? 
+                playerHands.reduce((sum, hand) => sum + hand.betAmount, 0) : 
+                currentBet;
+            document.getElementById('current-bet').textContent = '$' + totalBetAmount;
+            
+            document.getElementById('hands-played').textContent = handsPlayed;
+            document.getElementById('correct-plays').textContent = correctPlays + ' / ' + totalDecisions;
+        }
+
+        
+        // --- ADDED: Graphing Functions ---
+        
+        /**
+         * Gets the pre-calculated EV for the initial 2-card hand.
+         * @param {Array} playerCards - The player's 2-card hand.
+         * @param {Object} dealerUpCard - The dealer's up card.
+         * @returns {number} The EV as a decimal (e.g., -0.541).
+         */
+        function getInitialEV(playerCards, dealerUpCard) {
+            const calc = calculateHand(playerCards);
+            let dealerVal = dealerUpCard.value;
+            if (['J', 'Q', 'K'].includes(dealerVal)) dealerVal = '10';
+
+            // Check for Blackjack (not in EV table, custom value)
+            if (calc.total === 21) {
+                // If dealer also has A or 10, it's a push (EV 0)
+                if (dealerUpCard.numValue >= 10) {
+                    return 0.0;
+                }
+                // If dealer doesn't have A or 10, it's a 3:2 win (EV +1.5)
+                return 1.5;
+            }
+
+            try {
+                // Case 1: Pair
+                if (playerCards[0].value === playerCards[1].value) {
+                    let pairVal = playerCards[0].value;
+                    if (['J', 'Q', 'K'].includes(pairVal)) pairVal = '10';
+                    return evTable.pairs[pairVal][dealerVal];
+                }
+
+                // Case 2: Soft Hand
+                if (calc.soft) {
+                    return evTable.soft[`${calc.total}`][dealerVal];
+                }
+
+                // Case 3: Hard Hand
+                return evTable.hard[`${calc.total}`][dealerVal];
+
+            } catch (e) {
+                console.error(`Could not find EV for:`, calc, `vs`, dealerVal, e);
+                return 0; // Default to 0 EV if lookup fails
+            }
+        }
+
+        /**
+         * Updates the two variance charts with the latest hand data.
+         * @param {number} handProfit - The net profit/loss from the last hand.
+         * @param {number} handEV - The initial $EV of the last hand.
+         */
+        function updateGraphs(handProfit, handEV) {
+            // UPDATED: Removed check for handOutcomeChart
+            if (!sessionVarianceChart) return;
+
+            // 1. Update Session Variance Line Chart
+            sessionVarianceChart.data.labels.push(handsPlayed);
+            sessionVarianceChart.data.datasets[0].data.push(cumulativeProfit);
+            sessionVarianceChart.data.datasets[1].data.push(cumulativeEV);
+            
+            // Limit to 100 hands on chart to prevent clutter
+            if (sessionVarianceChart.data.labels.length > 100) {
+                sessionVarianceChart.data.labels.shift();
+                sessionVarianceChart.data.datasets.forEach(dataset => dataset.data.shift());
+            }
+            sessionVarianceChart.update('none'); // 'none' for no animation
+
+            // 2. REMOVED: Scatter Plot update logic
+        }
+
+        /**
+         * Creates and configures the charts on page load.
+         */
+        function initializeGraphs() {
+            const lineCtx = document.getElementById('session-variance-chart').getContext('2d');
+            // UPDATED: Removed scatterCtx
+            
+            Chart.defaults.color = '#d4af37';
+            Chart.defaults.borderColor = 'rgba(212, 175, 55, 0.2)';
+
+            // Master KPI: Session Variance (Line)
+            sessionVarianceChart = new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Actual P/L',
+                            data: [],
+                            borderColor: '#90ee90',
+                            backgroundColor: '#90ee90',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 1
+                        },
+                        {
+                            label: 'Expected P/L (EV)',
+                            data: [],
+                            borderColor: '#ff6b6b',
+                            backgroundColor: '#ff6b6b',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 1,
+                            borderDash: [5, 5]
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            ticks: { callback: value => '$' + value },
+                            grid: { color: 'rgba(212, 175, 55, 0.1)' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Hands Played' },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // UPDATED: REMOVED Scatter chart initialization
+        }
+        // --- END: Graphing Functions ---
+
+
+        // Initialize
+        createDeck();
+        updateStats();
+        updateBetDisplay(); // Initialize betting display
+        initializeGraphs(); // ADDED: Initialize charts
     </script>
-
 </body>
 </html>
